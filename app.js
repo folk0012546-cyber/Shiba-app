@@ -27,6 +27,21 @@
       toastCleared: "ล้างงานที่เสร็จแล้วเรียบร้อย",
       dueToday: "วันนี้",
       dueTomorrow: "พรุ่งนี้",
+      calendarHeading: "ปฏิทิน",
+      calendarLegendToday: "งานวันนี้",
+      calendarLegendTomorrow: "งานพรุ่งนี้",
+      listsHeading: "รายการทั้งหมด",
+      listsCountFmt: (n) => `${n} รายการ`,
+      filters: { all: "ทั้งหมด", today: "วันนี้", tomorrow: "พรุ่งนี้", priority: "สำคัญ", done: "เสร็จแล้ว" },
+      emptyFilter: "ไม่มีงานในหมวดนี้",
+      profileHeading: "โปรไฟล์",
+      statTotal: "งานทั้งหมด",
+      statDone: "เสร็จแล้ว",
+      statPending: "ค้างอยู่",
+      profileLangHeading: "ภาษา",
+      resetButton: "ล้างข้อมูลทั้งหมด",
+      resetConfirm: "ล้างงานทั้งหมดที่บันทึกไว้ในเครื่องนี้? ทำแล้วกู้คืนไม่ได้",
+      resetDone: "ล้างข้อมูลทั้งหมดแล้ว",
       assistant: {
         empty: "ยังไม่มีงานเลย พิมพ์อะไรสักอย่างที่อยากทำวันนี้สิ",
         allDone: "เก่งมาก! วันนี้ไม่มีงานค้างแล้ว พักหน่อยนะ 🐾",
@@ -58,6 +73,21 @@
       toastCleared: "Cleared your finished tasks",
       dueToday: "Today",
       dueTomorrow: "Tmrw",
+      calendarHeading: "Calendar",
+      calendarLegendToday: "Due today",
+      calendarLegendTomorrow: "Due tomorrow",
+      listsHeading: "All tasks",
+      listsCountFmt: (n) => `${n} item${n === 1 ? "" : "s"}`,
+      filters: { all: "All", today: "Today", tomorrow: "Tomorrow", priority: "Priority", done: "Done" },
+      emptyFilter: "No tasks in this filter",
+      profileHeading: "Profile",
+      statTotal: "Total tasks",
+      statDone: "Done",
+      statPending: "Pending",
+      profileLangHeading: "Language",
+      resetButton: "Clear all data",
+      resetConfirm: "Clear every task saved on this device? This can't be undone.",
+      resetDone: "All data cleared",
       assistant: {
         empty: "No tasks yet — add something you want to get done today.",
         allDone: "Nice work! Nothing left today. Take a break 🐾",
@@ -89,6 +119,21 @@
       toastCleared: "已清除完成的任务",
       dueToday: "今天",
       dueTomorrow: "明天",
+      calendarHeading: "日历",
+      calendarLegendToday: "今天的任务",
+      calendarLegendTomorrow: "明天的任务",
+      listsHeading: "全部任务",
+      listsCountFmt: (n) => `${n} 项`,
+      filters: { all: "全部", today: "今天", tomorrow: "明天", priority: "重要", done: "已完成" },
+      emptyFilter: "此分类暂无任务",
+      profileHeading: "我的",
+      statTotal: "任务总数",
+      statDone: "已完成",
+      statPending: "待完成",
+      profileLangHeading: "语言",
+      resetButton: "清除所有数据",
+      resetConfirm: "确定要清除本机保存的所有任务吗？此操作无法撤销。",
+      resetDone: "已清除所有数据",
       assistant: {
         empty: "还没有任务，写下今天想完成的第一件事吧。",
         allDone: "太棒了！今天的任务都完成了，休息一下吧 🐾",
@@ -110,6 +155,18 @@
     zh: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
   };
 
+  const MONTH_FULL = {
+    th: ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"],
+    en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    zh: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
+  };
+
+  const WEEKDAY_SHORT = {
+    th: ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"],
+    en: ["S", "M", "T", "W", "T", "F", "S"],
+    zh: ["日", "一", "二", "三", "四", "五", "六"],
+  };
+
   const STORAGE_KEY = "shiba.tasks.v1";
   const LANG_KEY = "shiba.lang.v1";
 
@@ -118,6 +175,9 @@
   let tasks = loadTasks();
   let composerDue = "today"; // 'today' | 'tomorrow'
   let composerPriority = false;
+  let currentView = "today";
+  let calendarCursor = new Date(); // month currently shown in the calendar view
+  let listsFilter = "all";
 
   function loadTasks() {
     try {
@@ -174,7 +234,37 @@
   const navLists = el("nav-lists");
   const navMe = el("nav-me");
   const navButtons = Array.from(document.querySelectorAll(".bottom-nav .nav-item"));
-  const [navTodayBtn, navCalendarBtn, navListsBtn, navMeBtn] = navButtons;
+
+  const viewToday = el("view-today");
+  const viewCalendar = el("view-calendar");
+  const viewLists = el("view-lists");
+  const viewProfile = el("view-profile");
+  const VIEWS = { today: viewToday, calendar: viewCalendar, lists: viewLists, profile: viewProfile };
+
+  const calendarHeadingEl = el("calendar-heading");
+  const calendarMonthLabelEl = el("calendar-month-label");
+  const calendarWeekdaysEl = el("calendar-weekdays");
+  const calendarGridEl = el("calendar-grid");
+  const calendarLegendTodayEl = el("calendar-legend-today");
+  const calendarLegendTomorrowEl = el("calendar-legend-tomorrow");
+  const calendarPrevBtn = el("calendar-prev");
+  const calendarNextBtn = el("calendar-next");
+
+  const listsHeadingEl = el("lists-heading");
+  const listsCountEl = el("lists-count");
+  const listsTaskListEl = el("lists-task-list");
+  const listsFilterButtons = Array.from(document.querySelectorAll(".filter-tab"));
+
+  const profileHeadingEl = el("profile-heading");
+  const profileStatTotalEl = el("profile-stat-total");
+  const profileStatDoneEl = el("profile-stat-done");
+  const profileStatPendingEl = el("profile-stat-pending");
+  const profileLabelTotalEl = el("profile-label-total");
+  const profileLabelDoneEl = el("profile-label-done");
+  const profileLabelPendingEl = el("profile-label-pending");
+  const profileLangHeadingEl = el("profile-lang-heading");
+  const profileResetBtn = el("profile-reset");
+  const profileLangButtons = Array.from(document.querySelectorAll("#profile-lang-options .chip"));
   const chipToday = document.querySelector('.chip[data-time="today"]');
   const chipTomorrow = document.querySelector('.chip[data-time="tomorrow"]');
   const chipPriority = el("priority-chip");
@@ -212,6 +302,20 @@
     navCalendar.textContent = t.navCalendar;
     navLists.textContent = t.navLists;
     navMe.textContent = t.navMe;
+    calendarHeadingEl.textContent = t.calendarHeading;
+    calendarLegendTodayEl.textContent = t.calendarLegendToday;
+    calendarLegendTomorrowEl.textContent = t.calendarLegendTomorrow;
+    listsHeadingEl.textContent = t.listsHeading;
+    listsFilterButtons.forEach((btn) => {
+      btn.textContent = t.filters[btn.dataset.filter];
+    });
+    profileHeadingEl.textContent = t.profileHeading;
+    profileLabelTotalEl.textContent = t.statTotal;
+    profileLabelDoneEl.textContent = t.statDone;
+    profileLabelPendingEl.textContent = t.statPending;
+    profileLangHeadingEl.textContent = t.profileLangHeading;
+    profileResetBtn.textContent = t.resetButton;
+    profileLangButtons.forEach((btn) => btn.classList.toggle("selected", btn.dataset.lang === lang));
     renderDate();
   }
 
@@ -356,7 +460,107 @@
     return div.innerHTML;
   }
 
-  /* ================= Actions ================= */
+  /* ---- Calendar view ---- */
+  function renderCalendar() {
+    const t = STR[lang];
+    const now = new Date();
+    const isCurrentMonth = calendarCursor.getFullYear() === now.getFullYear() && calendarCursor.getMonth() === now.getMonth();
+    const todayPending = tasks.some((task) => task.due === "today" && !task.done);
+    const tomorrowPending = tasks.some((task) => task.due === "tomorrow" && !task.done);
+
+    calendarMonthLabelEl.textContent = `${MONTH_FULL[lang][calendarCursor.getMonth()]} ${calendarCursor.getFullYear()}`;
+
+    calendarWeekdaysEl.innerHTML = "";
+    WEEKDAY_SHORT[lang].forEach((d) => {
+      const span = document.createElement("span");
+      span.textContent = d;
+      calendarWeekdaysEl.appendChild(span);
+    });
+
+    const year = calendarCursor.getFullYear();
+    const month = calendarCursor.getMonth();
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    calendarGridEl.innerHTML = "";
+    for (let i = 0; i < firstWeekday; i++) {
+      const blank = document.createElement("div");
+      blank.className = "calendar-day is-blank";
+      calendarGridEl.appendChild(blank);
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement("div");
+      cell.className = "calendar-day";
+      const isToday = isCurrentMonth && d === now.getDate();
+      const isTomorrow = isCurrentMonth && d === now.getDate() + 1;
+      if (isToday) cell.classList.add("is-today");
+      else if (isTomorrow) cell.classList.add("is-tomorrow");
+      cell.textContent = String(d);
+      if (isToday && todayPending) {
+        const dot = document.createElement("span");
+        dot.className = "dot dot-today";
+        cell.appendChild(dot);
+      } else if (isTomorrow && tomorrowPending) {
+        const dot = document.createElement("span");
+        dot.className = "dot dot-tomorrow";
+        cell.appendChild(dot);
+      }
+      calendarGridEl.appendChild(cell);
+    }
+  }
+
+  /* ---- Lists view ---- */
+  function filteredTasks(filter) {
+    if (filter === "all") return tasks;
+    if (filter === "today") return tasks.filter((t) => t.due === "today" && !t.done);
+    if (filter === "tomorrow") return tasks.filter((t) => t.due === "tomorrow" && !t.done);
+    if (filter === "priority") return tasks.filter((t) => t.priority && !t.done);
+    if (filter === "done") return tasks.filter((t) => t.done);
+    return tasks;
+  }
+
+  function renderLists() {
+    const t = STR[lang];
+    const list = filteredTasks(listsFilter);
+    listsCountEl.textContent = t.listsCountFmt(list.length);
+    listsTaskListEl.innerHTML = "";
+    if (list.length === 0) {
+      listsTaskListEl.appendChild(emptyState(null, t.emptyFilter, "🐾"));
+    } else {
+      list.forEach((task) => listsTaskListEl.appendChild(taskRow(task)));
+    }
+  }
+
+  /* ---- Profile view ---- */
+  function renderProfile() {
+    const done = tasks.filter((task) => task.done).length;
+    profileStatTotalEl.textContent = String(tasks.length);
+    profileStatDoneEl.textContent = String(done);
+    profileStatPendingEl.textContent = String(tasks.length - done);
+  }
+
+  /* ---- View switching ---- */
+  function switchView(name) {
+    if (!VIEWS[name]) return;
+    Object.entries(VIEWS).forEach(([key, node]) => {
+      node.hidden = key !== name;
+    });
+    navButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.view === name));
+    currentView = name;
+    if (name === "calendar") renderCalendar();
+    else if (name === "lists") renderLists();
+    else if (name === "profile") renderProfile();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+
+  function refreshAll() {
+    renderTasks();
+    if (currentView === "calendar") renderCalendar();
+    else if (currentView === "lists") renderLists();
+    else if (currentView === "profile") renderProfile();
+  }
+
   function addTask(text) {
     const trimmed = text.trim();
     if (!trimmed) return;
@@ -370,7 +574,7 @@
     composerPriority = false;
     renderComposerChips();
     saveTasks();
-    renderTasks();
+    refreshAll();
   }
 
   function toggleDone(id) {
@@ -378,20 +582,20 @@
     if (!task) return;
     task.done = !task.done;
     saveTasks();
-    renderTasks();
+    refreshAll();
   }
 
   function deleteTask(id) {
     tasks = tasks.filter((t) => t.id !== id);
     saveTasks();
-    renderTasks();
+    refreshAll();
   }
 
   function clearDone() {
     const hadDone = tasks.some((t) => t.done);
     tasks = tasks.filter((t) => !t.done);
     saveTasks();
-    renderTasks();
+    refreshAll();
     if (hadDone) showToast(STR[lang].toastCleared);
   }
 
@@ -425,21 +629,49 @@
     localStorage.setItem(LANG_KEY, lang);
     renderStaticText();
     renderComposerChips();
-    renderTasks();
+    refreshAll();
   });
 
-  [navCalendarBtn, navListsBtn, navMeBtn].forEach((btn) => {
+  navButtons.forEach((btn) => {
+    btn.addEventListener("click", () => switchView(btn.dataset.view));
+  });
+
+  calendarPrevBtn.addEventListener("click", () => {
+    calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1);
+    renderCalendar();
+  });
+
+  calendarNextBtn.addEventListener("click", () => {
+    calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1);
+    renderCalendar();
+  });
+
+  listsFilterButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      navButtons.forEach((n) => n.classList.remove("active"));
-      btn.classList.add("active");
-      showToast(STR[lang].toastComingSoon);
+      listsFilter = btn.dataset.filter;
+      listsFilterButtons.forEach((b) => b.classList.toggle("selected", b === btn));
+      renderLists();
     });
   });
 
-  navTodayBtn.addEventListener("click", () => {
-    navButtons.forEach((n) => n.classList.remove("active"));
-    navTodayBtn.classList.add("active");
-    document.getElementById("today").scrollIntoView({ behavior: "smooth" });
+  profileLangButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      lang = btn.dataset.lang;
+      localStorage.setItem(LANG_KEY, lang);
+      langSelect.value = lang;
+      renderStaticText();
+      renderComposerChips();
+      refreshAll();
+    });
+  });
+
+  profileResetBtn.addEventListener("click", () => {
+    const t = STR[lang];
+    if (!window.confirm(t.resetConfirm)) return;
+    tasks = [];
+    saveTasks();
+    refreshAll();
+    showToast(t.resetDone);
   });
 
   /* ================= Init ================= */

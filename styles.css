@@ -701,6 +701,267 @@ a:focus-visible {
 }
 
 /* ===================================================================
+   View switching
+   #view-today uses display:contents so its children keep acting as
+   direct grid items of .app-shell (needed for the desktop grid areas).
+   The other pages are plain single-column cards.
+=================================================================== */
+[hidden] {
+  display: none !important;
+}
+
+.view {
+  display: contents;
+}
+
+.view-page {
+  display: block;
+  padding-top: 6px;
+}
+
+/* ===================================================================
+   Calendar page
+=================================================================== */
+.calendar-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-md);
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.calendar-nav strong {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.calendar-nav button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--coat-wash);
+  color: var(--coat-dark);
+  font-size: 1.1rem;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease;
+}
+
+.calendar-nav button:hover {
+  background: var(--coat-light);
+}
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-weekdays {
+  margin-bottom: 6px;
+}
+
+.calendar-weekdays span {
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+
+.calendar-day {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.calendar-day.is-blank {
+  visibility: hidden;
+}
+
+.calendar-day.is-today {
+  background: var(--coat);
+  color: var(--white);
+  font-weight: 800;
+}
+
+.calendar-day.is-tomorrow {
+  background: var(--coat-wash);
+}
+
+.calendar-day .dot {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sage);
+}
+
+.dot-today {
+  background: var(--coat-dark);
+}
+
+.dot-tomorrow {
+  background: var(--sage);
+}
+
+.calendar-legend {
+  display: flex;
+  gap: 18px;
+  margin-top: 12px;
+  padding: 0 4px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.calendar-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ===================================================================
+   Lists page
+=================================================================== */
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.filter-tab {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--coat-wash);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.filter-tab.selected {
+  background: var(--coat);
+  color: var(--white);
+}
+
+/* ===================================================================
+   Profile page
+=================================================================== */
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-md);
+}
+
+.profile-avatar {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.4rem;
+  display: grid;
+  place-items: center;
+}
+
+.profile-stats {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.profile-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.profile-stat strong {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--coat-dark);
+}
+
+.profile-stat span {
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.profile-section {
+  margin-top: 18px;
+}
+
+.profile-section h3 {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+#profile-lang-options .chip[data-lang] {
+  cursor: pointer;
+}
+
+.danger-button {
+  width: 100%;
+  padding: 13px;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  border: 1.5px solid #e0897a;
+  color: #c1503b;
+  font-weight: 700;
+  font-size: 0.88rem;
+  transition: background 0.15s ease;
+}
+
+.danger-button:hover {
+  background: #fdeeea;
+}
+
+@media (min-width: 760px) {
+  .view-page {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ===================================================================
    Small screens
 =================================================================== */
 @media (max-width: 360px) {

@@ -39,54 +39,114 @@
         </div>
       </header>
 
-      <section class="hero" id="today">
-        <div>
-          <p class="eyebrow" id="today-date"></p>
-          <h1 id="welcome-title"></h1>
-          <p class="hero-copy" id="hero-copy"></p>
-        </div>
-        <div class="shiba-illustration" aria-hidden="true">
-          <span class="ear left-ear"></span><span class="ear right-ear"></span>
-          <span class="shiba-face"><span class="eye left-eye"></span><span class="eye right-eye"></span><span class="muzzle"></span></span>
-          <span class="paw">✦</span>
-        </div>
-      </section>
+      <div class="view" id="view-today">
+        <section class="hero" id="today">
+          <div>
+            <p class="eyebrow" id="today-date"></p>
+            <h1 id="welcome-title"></h1>
+            <p class="hero-copy" id="hero-copy"></p>
+          </div>
+          <div class="shiba-illustration" aria-hidden="true">
+            <span class="ear left-ear"></span><span class="ear right-ear"></span>
+            <span class="shiba-face"><span class="eye left-eye"></span><span class="eye right-eye"></span><span class="muzzle"></span></span>
+            <span class="paw">✦</span>
+          </div>
+        </section>
 
-      <section class="quick-add" aria-label="Add a task">
-        <form id="task-form">
-          <input id="task-input" type="text" autocomplete="off" required />
-          <button class="add-button" type="submit" aria-label="Add task">+</button>
-        </form>
-        <div class="quick-options">
-          <button class="chip" type="button" data-time="today"><span>◷</span><span id="today-chip"></span></button>
-          <button class="chip" type="button" data-time="tomorrow"><span>☀</span><span id="tomorrow-chip"></span></button>
-          <button class="chip" type="button" id="priority-chip"><span>⚑</span><span id="priority-chip-text"></span></button>
-        </div>
-      </section>
+        <section class="quick-add" aria-label="Add a task">
+          <form id="task-form">
+            <input id="task-input" type="text" autocomplete="off" required />
+            <button class="add-button" type="submit" aria-label="Add task">+</button>
+          </form>
+          <div class="quick-options">
+            <button class="chip" type="button" data-time="today"><span>◷</span><span id="today-chip"></span></button>
+            <button class="chip" type="button" data-time="tomorrow"><span>☀</span><span id="tomorrow-chip"></span></button>
+            <button class="chip" type="button" id="priority-chip"><span>⚑</span><span id="priority-chip-text"></span></button>
+          </div>
+        </section>
 
-      <section class="assistant-card" aria-live="polite">
-        <div class="assistant-icon" aria-hidden="true">🐾</div>
-        <div><p id="assistant-label"></p><strong id="assistant-message"></strong></div>
-      </section>
+        <section class="assistant-card" aria-live="polite">
+          <div class="assistant-icon" aria-hidden="true">🐾</div>
+          <div><p id="assistant-label"></p><strong id="assistant-message"></strong></div>
+        </section>
 
-      <section class="task-section">
+        <section class="task-section">
+          <div class="section-heading">
+            <div><h2 id="task-heading"></h2><span id="task-count"></span></div>
+            <button class="text-button" id="clear-done" type="button"></button>
+          </div>
+          <div class="task-list" id="task-list"></div>
+        </section>
+
+        <section class="upcoming-section">
+          <div class="section-heading"><div><h2 id="upcoming-heading"></h2><span id="upcoming-subtitle"></span></div></div>
+          <div class="upcoming-list" id="upcoming-list"></div>
+        </section>
+      </div>
+
+      <div class="view-page" id="view-calendar" hidden>
         <div class="section-heading">
-          <div><h2 id="task-heading"></h2><span id="task-count"></span></div>
-          <button class="text-button" id="clear-done" type="button"></button>
+          <div><h2 id="calendar-heading"></h2></div>
         </div>
-        <div class="task-list" id="task-list"></div>
-      </section>
+        <div class="calendar-card">
+          <div class="calendar-nav">
+            <button type="button" id="calendar-prev" aria-label="Previous month">‹</button>
+            <strong id="calendar-month-label"></strong>
+            <button type="button" id="calendar-next" aria-label="Next month">›</button>
+          </div>
+          <div class="calendar-weekdays" id="calendar-weekdays"></div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+        <div class="calendar-legend">
+          <span><i class="dot dot-today" aria-hidden="true"></i><span id="calendar-legend-today"></span></span>
+          <span><i class="dot dot-tomorrow" aria-hidden="true"></i><span id="calendar-legend-tomorrow"></span></span>
+        </div>
+      </div>
 
-      <section class="upcoming-section">
-        <div class="section-heading"><div><h2 id="upcoming-heading"></h2><span id="upcoming-subtitle"></span></div></div>
-        <div class="upcoming-list" id="upcoming-list"></div>
-      </section>
+      <div class="view-page" id="view-lists" hidden>
+        <div class="section-heading">
+          <div><h2 id="lists-heading"></h2><span id="lists-count"></span></div>
+        </div>
+        <div class="filter-tabs" id="lists-filters">
+          <button class="filter-tab selected" type="button" data-filter="all"></button>
+          <button class="filter-tab" type="button" data-filter="today"></button>
+          <button class="filter-tab" type="button" data-filter="tomorrow"></button>
+          <button class="filter-tab" type="button" data-filter="priority"></button>
+          <button class="filter-tab" type="button" data-filter="done"></button>
+        </div>
+        <div class="task-list" id="lists-task-list"></div>
+      </div>
+
+      <div class="view-page" id="view-profile" hidden>
+        <div class="section-heading">
+          <div><h2 id="profile-heading"></h2></div>
+        </div>
+        <div class="profile-card">
+          <div class="profile-avatar" aria-hidden="true">S</div>
+          <div class="profile-stats">
+            <div class="profile-stat"><strong id="profile-stat-total"></strong><span id="profile-label-total"></span></div>
+            <div class="profile-stat"><strong id="profile-stat-done"></strong><span id="profile-label-done"></span></div>
+            <div class="profile-stat"><strong id="profile-stat-pending"></strong><span id="profile-label-pending"></span></div>
+          </div>
+        </div>
+        <div class="profile-section">
+          <h3 id="profile-lang-heading"></h3>
+          <div class="quick-options" id="profile-lang-options">
+            <button class="chip" type="button" data-lang="th">ไทย</button>
+            <button class="chip" type="button" data-lang="zh">中文</button>
+            <button class="chip" type="button" data-lang="en">EN</button>
+          </div>
+        </div>
+        <div class="profile-section">
+          <button class="danger-button" id="profile-reset" type="button"></button>
+        </div>
+      </div>
     </main>
     <nav class="bottom-nav" aria-label="Main navigation">
-      <button class="nav-item active" type="button"><span>⌂</span><span id="nav-today"></span></button>
-      <button class="nav-item" type="button"><span>□</span><span id="nav-calendar"></span></button>
-      <button class="nav-item" type="button"><span>✓</span><span id="nav-lists"></span></button>
-      <button class="nav-item" type="button"><span>☺</span><span id="nav-me"></span></button>
+      <button class="nav-item active" type="button" data-view="today"><span>⌂</span><span id="nav-today"></span></button>
+      <button class="nav-item" type="button" data-view="calendar"><span>□</span><span id="nav-calendar"></span></button>
+      <button class="nav-item" type="button" data-view="lists"><span>✓</span><span id="nav-lists"></span></button>
+      <button class="nav-item" type="button" data-view="profile"><span>☺</span><span id="nav-me"></span></button>
     </nav>
     <script src="app.js"></script>
     <script>
