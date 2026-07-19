@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ff8c42" />
+    <title>ชิบะช่วยจำ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- PWA: ทำให้ติดตั้งบนมือถือได้ -->
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icon-192.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ชิบะช่วยจำ" />
+    <meta name="mobile-web-app-capable" content="yes" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#today" aria-label="Shiba Remembers">
+          <span class="brand-mark" aria-hidden="true">🐕</span>
+          <span>ชิบะช่วยจำ</span>
+        </a>
+        <div class="topbar-actions">
+          <label class="language-picker" for="language-select">
+            <span aria-hidden="true">◎</span>
+            <select id="language-select" aria-label="Language">
+              <option value="th">ไทย</option>
+              <option value="zh">中文</option>
+              <option value="en">EN</option>
+            </select>
+          </label>
+          <button class="avatar" type="button" aria-label="Profile">S</button>
+        </div>
+      </header>
+
+      <section class="hero" id="today">
+        <div>
+          <p class="eyebrow" id="today-date"></p>
+          <h1 id="welcome-title"></h1>
+          <p class="hero-copy" id="hero-copy"></p>
+        </div>
+        <div class="shiba-illustration" aria-hidden="true">
+          <span class="ear left-ear"></span><span class="ear right-ear"></span>
+          <span class="shiba-face"><span class="eye left-eye"></span><span class="eye right-eye"></span><span class="muzzle"></span></span>
+          <span class="paw">✦</span>
+        </div>
+      </section>
+
+      <section class="quick-add" aria-label="Add a task">
+        <form id="task-form">
+          <input id="task-input" type="text" autocomplete="off" required />
+          <button class="add-button" type="submit" aria-label="Add task">+</button>
+        </form>
+        <div class="quick-options">
+          <button class="chip" type="button" data-time="today"><span>◷</span><span id="today-chip"></span></button>
+          <button class="chip" type="button" data-time="tomorrow"><span>☀</span><span id="tomorrow-chip"></span></button>
+          <button class="chip" type="button" id="priority-chip"><span>⚑</span><span id="priority-chip-text"></span></button>
+        </div>
+      </section>
+
+      <section class="assistant-card" aria-live="polite">
+        <div class="assistant-icon" aria-hidden="true">🐾</div>
+        <div><p id="assistant-label"></p><strong id="assistant-message"></strong></div>
+      </section>
+
+      <section class="task-section">
+        <div class="section-heading">
+          <div><h2 id="task-heading"></h2><span id="task-count"></span></div>
+          <button class="text-button" id="clear-done" type="button"></button>
+        </div>
+        <div class="task-list" id="task-list"></div>
+      </section>
+
+      <section class="upcoming-section">
+        <div class="section-heading"><div><h2 id="upcoming-heading"></h2><span id="upcoming-subtitle"></span></div></div>
+        <div class="upcoming-list" id="upcoming-list"></div>
+      </section>
+    </main>
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button class="nav-item active" type="button"><span>⌂</span><span id="nav-today"></span></button>
+      <button class="nav-item" type="button"><span>□</span><span id="nav-calendar"></span></button>
+      <button class="nav-item" type="button"><span>✓</span><span id="nav-lists"></span></button>
+      <button class="nav-item" type="button"><span>☺</span><span id="nav-me"></span></button>
+    </nav>
+    <script src="app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("sw.js").catch((err) => {
+            console.warn("SW registration failed:", err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
