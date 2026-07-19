@@ -84,6 +84,30 @@
         </section>
       </div>
 
+      <div class="view-page" id="view-dashboard" hidden>
+        <div class="section-heading">
+          <div><h2 id="dashboard-heading"></h2></div>
+        </div>
+        <div class="scope-tabs" id="dashboard-scope-tabs">
+          <button class="scope-tab selected" type="button" data-scope="month"></button>
+          <button class="scope-tab" type="button" data-scope="quarter"></button>
+          <button class="scope-tab" type="button" data-scope="year"></button>
+        </div>
+        <div class="dashboard-period-nav">
+          <button type="button" id="dashboard-prev" aria-label="Previous period">‹</button>
+          <strong id="dashboard-period-label"></strong>
+          <button type="button" id="dashboard-next" aria-label="Next period">›</button>
+        </div>
+        <div class="dashboard-summary">
+          <div class="dashboard-stat-card"><strong id="dash-stat-created"></strong><span id="dash-label-created"></span></div>
+          <div class="dashboard-stat-card"><strong id="dash-stat-completed"></strong><span id="dash-label-completed"></span></div>
+          <div class="dashboard-stat-card"><strong id="dash-stat-rate"></strong><span id="dash-label-rate"></span></div>
+        </div>
+        <div class="dashboard-chart-card">
+          <div class="chart-bars" id="dashboard-chart"></div>
+        </div>
+      </div>
+
       <div class="view-page" id="view-calendar" hidden>
         <div class="section-heading">
           <div><h2 id="calendar-heading"></h2></div>
@@ -144,6 +168,7 @@
     </main>
     <nav class="bottom-nav" aria-label="Main navigation">
       <button class="nav-item active" type="button" data-view="today"><span>⌂</span><span id="nav-today"></span></button>
+      <button class="nav-item" type="button" data-view="dashboard"><span>📊</span><span id="nav-dashboard"></span></button>
       <button class="nav-item" type="button" data-view="calendar"><span>□</span><span id="nav-calendar"></span></button>
       <button class="nav-item" type="button" data-view="lists"><span>✓</span><span id="nav-lists"></span></button>
       <button class="nav-item" type="button" data-view="profile"><span>☺</span><span id="nav-me"></span></button>

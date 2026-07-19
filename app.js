@@ -42,6 +42,12 @@
       resetButton: "ล้างข้อมูลทั้งหมด",
       resetConfirm: "ล้างงานทั้งหมดที่บันทึกไว้ในเครื่องนี้? ทำแล้วกู้คืนไม่ได้",
       resetDone: "ล้างข้อมูลทั้งหมดแล้ว",
+      dashboardHeading: "แดชบอร์ด",
+      scope: { month: "รายเดือน", quarter: "รายไตรมาส", year: "รายปี" },
+      dashCreated: "งานที่สร้าง",
+      dashCompleted: "งานที่เสร็จ",
+      dashRate: "อัตราเสร็จ",
+      weekLabelFmt: (n) => `สัปดาห์ ${n}`,
       assistant: {
         empty: "ยังไม่มีงานเลย พิมพ์อะไรสักอย่างที่อยากทำวันนี้สิ",
         allDone: "เก่งมาก! วันนี้ไม่มีงานค้างแล้ว พักหน่อยนะ 🐾",
@@ -88,6 +94,12 @@
       resetButton: "Clear all data",
       resetConfirm: "Clear every task saved on this device? This can't be undone.",
       resetDone: "All data cleared",
+      dashboardHeading: "Dashboard",
+      scope: { month: "Month", quarter: "Quarter", year: "Year" },
+      dashCreated: "Created",
+      dashCompleted: "Completed",
+      dashRate: "Completion",
+      weekLabelFmt: (n) => `Week ${n}`,
       assistant: {
         empty: "No tasks yet — add something you want to get done today.",
         allDone: "Nice work! Nothing left today. Take a break 🐾",
@@ -134,6 +146,12 @@
       resetButton: "清除所有数据",
       resetConfirm: "确定要清除本机保存的所有任务吗？此操作无法撤销。",
       resetDone: "已清除所有数据",
+      dashboardHeading: "仪表盘",
+      scope: { month: "按月", quarter: "按季度", year: "按年" },
+      dashCreated: "创建任务",
+      dashCompleted: "完成任务",
+      dashRate: "完成率",
+      weekLabelFmt: (n) => `第${n}周`,
       assistant: {
         empty: "还没有任务，写下今天想完成的第一件事吧。",
         allDone: "太棒了！今天的任务都完成了，休息一下吧 🐾",
@@ -178,14 +196,21 @@
   let currentView = "today";
   let calendarCursor = new Date(); // month currently shown in the calendar view
   let listsFilter = "all";
+  let dashboardScope = "month"; // 'month' | 'quarter' | 'year'
+  let dashboardCursor = new Date();
 
   function loadTasks() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return seedTasks();
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-      return seedTasks();
+      if (!Array.isArray(parsed)) return seedTasks();
+      const now = new Date().toISOString();
+      return parsed.map((task) => ({
+        ...task,
+        createdAt: task.createdAt || now,
+        completedAt: task.done ? task.completedAt || now : null,
+      }));
     } catch {
       return seedTasks();
     }
@@ -193,7 +218,7 @@
 
   function seedTasks() {
     return [
-      { id: cryptoId(), text: sampleText(), done: false, due: "today", priority: true },
+      { id: cryptoId(), text: sampleText(), done: false, due: "today", priority: true, createdAt: new Date().toISOString(), completedAt: null },
     ];
   }
 
@@ -233,13 +258,28 @@
   const navCalendar = el("nav-calendar");
   const navLists = el("nav-lists");
   const navMe = el("nav-me");
+  const navDashboard = el("nav-dashboard");
   const navButtons = Array.from(document.querySelectorAll(".bottom-nav .nav-item"));
 
   const viewToday = el("view-today");
   const viewCalendar = el("view-calendar");
   const viewLists = el("view-lists");
   const viewProfile = el("view-profile");
-  const VIEWS = { today: viewToday, calendar: viewCalendar, lists: viewLists, profile: viewProfile };
+  const viewDashboard = el("view-dashboard");
+  const VIEWS = { today: viewToday, calendar: viewCalendar, lists: viewLists, profile: viewProfile, dashboard: viewDashboard };
+
+  const dashboardHeadingEl = el("dashboard-heading");
+  const dashboardScopeTabs = Array.from(document.querySelectorAll(".scope-tab"));
+  const dashboardPeriodLabelEl = el("dashboard-period-label");
+  const dashboardPrevBtn = el("dashboard-prev");
+  const dashboardNextBtn = el("dashboard-next");
+  const dashboardChartEl = el("dashboard-chart");
+  const dashStatCreatedEl = el("dash-stat-created");
+  const dashStatCompletedEl = el("dash-stat-completed");
+  const dashStatRateEl = el("dash-stat-rate");
+  const dashLabelCreatedEl = el("dash-label-created");
+  const dashLabelCompletedEl = el("dash-label-completed");
+  const dashLabelRateEl = el("dash-label-rate");
 
   const calendarHeadingEl = el("calendar-heading");
   const calendarMonthLabelEl = el("calendar-month-label");
@@ -316,6 +356,14 @@
     profileLangHeadingEl.textContent = t.profileLangHeading;
     profileResetBtn.textContent = t.resetButton;
     profileLangButtons.forEach((btn) => btn.classList.toggle("selected", btn.dataset.lang === lang));
+    navDashboard.textContent = t.dashboardHeading;
+    dashboardHeadingEl.textContent = t.dashboardHeading;
+    dashboardScopeTabs.forEach((btn) => {
+      btn.textContent = t.scope[btn.dataset.scope];
+    });
+    dashLabelCreatedEl.textContent = t.dashCreated;
+    dashLabelCompletedEl.textContent = t.dashCompleted;
+    dashLabelRateEl.textContent = t.dashRate;
     renderDate();
   }
 
@@ -539,7 +587,105 @@
     profileStatPendingEl.textContent = String(tasks.length - done);
   }
 
-  /* ---- View switching ---- */
+  /* ---- Dashboard view ---- */
+  function getPeriodInfo(scope, cursor) {
+    const t = STR[lang];
+    if (scope === "month") {
+      const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+      const end = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+      const label = `${MONTH_FULL[lang][cursor.getMonth()]} ${cursor.getFullYear()}`;
+      const buckets = [];
+      let bucketStart = new Date(start);
+      let idx = 1;
+      while (bucketStart < end) {
+        const bucketEndTime = Math.min(bucketStart.getTime() + 7 * 86400000, end.getTime());
+        const bucketEnd = new Date(bucketEndTime);
+        buckets.push({ label: t.weekLabelFmt(idx), start: new Date(bucketStart), end: bucketEnd });
+        bucketStart = bucketEnd;
+        idx++;
+      }
+      return { start, end, label, buckets };
+    }
+    if (scope === "quarter") {
+      const qIndex = Math.floor(cursor.getMonth() / 3);
+      const startMonth = qIndex * 3;
+      const start = new Date(cursor.getFullYear(), startMonth, 1);
+      const end = new Date(cursor.getFullYear(), startMonth + 3, 1);
+      const label = `Q${qIndex + 1} ${cursor.getFullYear()}`;
+      const buckets = [0, 1, 2].map((i) => ({
+        label: MONTH[lang][startMonth + i],
+        start: new Date(cursor.getFullYear(), startMonth + i, 1),
+        end: new Date(cursor.getFullYear(), startMonth + i + 1, 1),
+      }));
+      return { start, end, label, buckets };
+    }
+    // year
+    const start = new Date(cursor.getFullYear(), 0, 1);
+    const end = new Date(cursor.getFullYear() + 1, 0, 1);
+    const label = `${cursor.getFullYear()}`;
+    const buckets = Array.from({ length: 12 }, (_, i) => ({
+      label: MONTH[lang][i],
+      start: new Date(cursor.getFullYear(), i, 1),
+      end: new Date(cursor.getFullYear(), i + 1, 1),
+    }));
+    return { start, end, label, buckets };
+  }
+
+  function stepPeriod(scope, cursor, direction) {
+    if (scope === "month") return new Date(cursor.getFullYear(), cursor.getMonth() + direction, 1);
+    if (scope === "quarter") return new Date(cursor.getFullYear(), cursor.getMonth() + direction * 3, 1);
+    return new Date(cursor.getFullYear() + direction, cursor.getMonth(), 1);
+  }
+
+  function computeDashboard(scope, cursor) {
+    const period = getPeriodInfo(scope, cursor);
+    const inRange = (iso, start, end) => {
+      if (!iso) return false;
+      const d = new Date(iso);
+      return d >= start && d < end;
+    };
+    const created = tasks.filter((task) => inRange(task.createdAt, period.start, period.end)).length;
+    const completed = tasks.filter((task) => inRange(task.completedAt, period.start, period.end)).length;
+    const rate = created > 0 ? Math.round((completed / created) * 100) : 0;
+    const chartData = period.buckets.map((b) => ({
+      label: b.label,
+      count: tasks.filter((task) => inRange(task.completedAt, b.start, b.end)).length,
+    }));
+    return { label: period.label, created, completed, rate, chartData };
+  }
+
+  function renderDashboard() {
+    const data = computeDashboard(dashboardScope, dashboardCursor);
+    dashboardPeriodLabelEl.textContent = data.label;
+    dashStatCreatedEl.textContent = String(data.created);
+    dashStatCompletedEl.textContent = String(data.completed);
+    dashStatRateEl.textContent = `${data.rate}%`;
+
+    const maxCount = Math.max(1, ...data.chartData.map((d) => d.count));
+    dashboardChartEl.innerHTML = "";
+    data.chartData.forEach((bucket) => {
+      const col = document.createElement("div");
+      col.className = "chart-bar";
+
+      const countLabel = document.createElement("span");
+      countLabel.className = "chart-bar-count";
+      countLabel.textContent = String(bucket.count);
+
+      const fill = document.createElement("div");
+      fill.className = "chart-bar-fill";
+      const pct = Math.round((bucket.count / maxCount) * 100);
+      fill.style.height = `${bucket.count > 0 ? Math.max(pct, 6) : 2}%`;
+
+      const label = document.createElement("span");
+      label.className = "chart-bar-label";
+      label.textContent = bucket.label;
+
+      col.append(countLabel, fill, label);
+      dashboardChartEl.appendChild(col);
+    });
+  }
+
+
   function switchView(name) {
     if (!VIEWS[name]) return;
     Object.entries(VIEWS).forEach(([key, node]) => {
@@ -550,6 +696,7 @@
     if (name === "calendar") renderCalendar();
     else if (name === "lists") renderLists();
     else if (name === "profile") renderProfile();
+    else if (name === "dashboard") renderDashboard();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -559,6 +706,7 @@
     if (currentView === "calendar") renderCalendar();
     else if (currentView === "lists") renderLists();
     else if (currentView === "profile") renderProfile();
+    else if (currentView === "dashboard") renderDashboard();
   }
 
   function addTask(text) {
@@ -570,6 +718,8 @@
       done: false,
       due: composerDue,
       priority: composerPriority,
+      createdAt: new Date().toISOString(),
+      completedAt: null,
     });
     composerPriority = false;
     renderComposerChips();
@@ -581,6 +731,7 @@
     const task = tasks.find((t) => t.id === id);
     if (!task) return;
     task.done = !task.done;
+    task.completedAt = task.done ? new Date().toISOString() : null;
     saveTasks();
     refreshAll();
   }
@@ -644,6 +795,24 @@
   calendarNextBtn.addEventListener("click", () => {
     calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1);
     renderCalendar();
+  });
+
+  dashboardScopeTabs.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      dashboardScope = btn.dataset.scope;
+      dashboardScopeTabs.forEach((b) => b.classList.toggle("selected", b === btn));
+      renderDashboard();
+    });
+  });
+
+  dashboardPrevBtn.addEventListener("click", () => {
+    dashboardCursor = stepPeriod(dashboardScope, dashboardCursor, -1);
+    renderDashboard();
+  });
+
+  dashboardNextBtn.addEventListener("click", () => {
+    dashboardCursor = stepPeriod(dashboardScope, dashboardCursor, 1);
+    renderDashboard();
   });
 
   listsFilterButtons.forEach((btn) => {
