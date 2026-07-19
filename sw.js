@@ -1,4 +1,4 @@
-const CACHE_NAME = "shiba-remember-v1";
+const CACHE_NAME = "shiba-remember-v2";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -33,7 +33,30 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Core app files (html/css/js): always try the network first, so updates
+// show up immediately. Fall back to cache only when offline.
+const NETWORK_FIRST = /\.(html|css|js)$/;
+
 self.addEventListener("fetch", (event) => {
+  const isNavigation = event.request.mode === "navigate";
+  const isCoreFile = NETWORK_FIRST.test(new URL(event.request.url).pathname);
+
+  if (isNavigation || isCoreFile) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // Everything else (icons, fonts, manifest): cache-first, fill in from network.
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return (
@@ -44,7 +67,7 @@ self.addEventListener("fetch", (event) => {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
           return response;
-        }).catch(() => cached)
+        })
       );
     })
   );
