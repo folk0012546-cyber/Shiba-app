@@ -30,6 +30,7 @@
       calendarHeading: "ปฏิทิน",
       calendarLegendToday: "มีงานที่ต้องทำ",
       pickDateChip: "เลือกวันที่",
+      calendarAgendaEmpty: "ไม่มีงานในวันนี้",
       listsHeading: "รายการทั้งหมด",
       listsCountFmt: (n) => `${n} รายการ`,
       filters: { all: "ทั้งหมด", today: "วันนี้", tomorrow: "พรุ่งนี้", priority: "สำคัญ", done: "เสร็จแล้ว" },
@@ -82,6 +83,7 @@
       calendarHeading: "Calendar",
       calendarLegendToday: "Has tasks due",
       pickDateChip: "Pick date",
+      calendarAgendaEmpty: "No tasks on this day",
       listsHeading: "All tasks",
       listsCountFmt: (n) => `${n} item${n === 1 ? "" : "s"}`,
       filters: { all: "All", today: "Today", tomorrow: "Tomorrow", priority: "Priority", done: "Done" },
@@ -134,6 +136,7 @@
       calendarHeading: "日历",
       calendarLegendToday: "当天有任务",
       pickDateChip: "选日期",
+      calendarAgendaEmpty: "这天没有任务",
       listsHeading: "全部任务",
       listsCountFmt: (n) => `${n} 项`,
       filters: { all: "全部", today: "今天", tomorrow: "明天", priority: "重要", done: "已完成" },
@@ -221,6 +224,7 @@
   let composerPriority = false;
   let currentView = "today";
   let calendarCursor = new Date(); // month currently shown in the calendar view
+  let selectedCalendarDate = todayISO(); // which day's agenda is shown below the calendar
   let listsFilter = "all";
   let dashboardScope = "month"; // 'month' | 'quarter' | 'year'
   let dashboardCursor = new Date();
@@ -321,6 +325,8 @@
   const calendarLegendTodayEl = el("calendar-legend-today");
   const calendarPrevBtn = el("calendar-prev");
   const calendarNextBtn = el("calendar-next");
+  const calendarAgendaHeadingEl = el("calendar-agenda-heading");
+  const calendarAgendaListEl = el("calendar-agenda-list");
 
   const listsHeadingEl = el("lists-heading");
   const listsCountEl = el("lists-count");
@@ -590,6 +596,7 @@
       const cell = document.createElement("div");
       cell.className = "calendar-day";
       if (iso === today) cell.classList.add("is-today");
+      if (iso === selectedCalendarDate) cell.classList.add("is-selected");
       cell.textContent = String(d);
       const count = pendingByDate[iso] || 0;
       if (count > 0) {
@@ -598,7 +605,35 @@
         dot.title = `${count}`;
         cell.appendChild(dot);
       }
+      cell.addEventListener("click", () => {
+        selectedCalendarDate = iso;
+        renderCalendar();
+      });
       calendarGridEl.appendChild(cell);
+    }
+
+    renderCalendarAgenda();
+  }
+
+  function calendarAgendaHeading(iso) {
+    const t = STR[lang];
+    const dateStr = shortDateLabel(iso);
+    if (iso === todayISO()) return `${dateStr} (${t.dueToday})`;
+    if (iso === tomorrowISO()) return `${dateStr} (${t.dueTomorrow})`;
+    return dateStr;
+  }
+
+  function renderCalendarAgenda() {
+    const t = STR[lang];
+    calendarAgendaHeadingEl.textContent = calendarAgendaHeading(selectedCalendarDate);
+    const dayTasks = tasks
+      .filter((task) => task.due === selectedCalendarDate)
+      .sort((a, b) => Number(a.done) - Number(b.done) || Number(b.priority) - Number(a.priority));
+    calendarAgendaListEl.innerHTML = "";
+    if (dayTasks.length === 0) {
+      calendarAgendaListEl.appendChild(emptyState(null, t.calendarAgendaEmpty, "🐾"));
+    } else {
+      dayTasks.forEach((task) => calendarAgendaListEl.appendChild(taskRow(task)));
     }
   }
 
