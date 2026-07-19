@@ -853,14 +853,6 @@
     renderComposerChips();
   });
 
-  dateChip.addEventListener("click", () => {
-    if (typeof dateInput.showPicker === "function") {
-      dateInput.showPicker();
-    } else {
-      dateInput.focus();
-    }
-  });
-
   dateInput.addEventListener("change", () => {
     if (!dateInput.value) return;
     composerDue = dateInput.value;
