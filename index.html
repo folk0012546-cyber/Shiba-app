@@ -2,7 +2,7 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#ff8c42" />
     <title>ชิบะช่วยจำ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -62,6 +62,8 @@
             <button class="chip" type="button" data-time="today"><span>◷</span><span id="today-chip"></span></button>
             <button class="chip" type="button" data-time="tomorrow"><span>☀</span><span id="tomorrow-chip"></span></button>
             <button class="chip" type="button" id="priority-chip"><span>⚑</span><span id="priority-chip-text"></span></button>
+            <button class="chip" type="button" id="date-chip"><span>📅</span><span id="date-chip-text"></span></button>
+            <input type="date" id="date-input" class="sr-date-input" aria-label="Pick a due date" />
           </div>
         </section>
 
@@ -123,7 +125,6 @@
         </div>
         <div class="calendar-legend">
           <span><i class="dot dot-today" aria-hidden="true"></i><span id="calendar-legend-today"></span></span>
-          <span><i class="dot dot-tomorrow" aria-hidden="true"></i><span id="calendar-legend-tomorrow"></span></span>
         </div>
       </div>
 

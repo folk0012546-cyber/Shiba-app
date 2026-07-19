@@ -28,8 +28,8 @@
       dueToday: "วันนี้",
       dueTomorrow: "พรุ่งนี้",
       calendarHeading: "ปฏิทิน",
-      calendarLegendToday: "งานวันนี้",
-      calendarLegendTomorrow: "งานพรุ่งนี้",
+      calendarLegendToday: "มีงานที่ต้องทำ",
+      pickDateChip: "เลือกวันที่",
       listsHeading: "รายการทั้งหมด",
       listsCountFmt: (n) => `${n} รายการ`,
       filters: { all: "ทั้งหมด", today: "วันนี้", tomorrow: "พรุ่งนี้", priority: "สำคัญ", done: "เสร็จแล้ว" },
@@ -80,8 +80,8 @@
       dueToday: "Today",
       dueTomorrow: "Tmrw",
       calendarHeading: "Calendar",
-      calendarLegendToday: "Due today",
-      calendarLegendTomorrow: "Due tomorrow",
+      calendarLegendToday: "Has tasks due",
+      pickDateChip: "Pick date",
       listsHeading: "All tasks",
       listsCountFmt: (n) => `${n} item${n === 1 ? "" : "s"}`,
       filters: { all: "All", today: "Today", tomorrow: "Tomorrow", priority: "Priority", done: "Done" },
@@ -132,8 +132,8 @@
       dueToday: "今天",
       dueTomorrow: "明天",
       calendarHeading: "日历",
-      calendarLegendToday: "今天的任务",
-      calendarLegendTomorrow: "明天的任务",
+      calendarLegendToday: "当天有任务",
+      pickDateChip: "选日期",
       listsHeading: "全部任务",
       listsCountFmt: (n) => `${n} 项`,
       filters: { all: "全部", today: "今天", tomorrow: "明天", priority: "重要", done: "已完成" },
@@ -188,10 +188,36 @@
   const STORAGE_KEY = "shiba.tasks.v1";
   const LANG_KEY = "shiba.lang.v1";
 
+  /* ================= Date helpers ================= */
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function isoDate(d) {
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  }
+
+  function todayISO() {
+    return isoDate(new Date());
+  }
+
+  function tomorrowISO() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return isoDate(d);
+  }
+
+  function shortDateLabel(iso) {
+    const d = new Date(`${iso}T00:00:00`);
+    if (lang === "zh") return `${d.getMonth() + 1}/${d.getDate()}`;
+    if (lang === "th") return `${d.getDate()} ${MONTH[lang][d.getMonth()]}`;
+    return `${MONTH[lang][d.getMonth()]} ${d.getDate()}`;
+  }
+
   /* ================= State ================= */
   let lang = localStorage.getItem(LANG_KEY) || "th";
   let tasks = loadTasks();
-  let composerDue = "today"; // 'today' | 'tomorrow'
+  let composerDue = todayISO(); // an ISO date string, e.g. "2026-07-19"
   let composerPriority = false;
   let currentView = "today";
   let calendarCursor = new Date(); // month currently shown in the calendar view
@@ -206,11 +232,18 @@
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return seedTasks();
       const now = new Date().toISOString();
-      return parsed.map((task) => ({
-        ...task,
-        createdAt: task.createdAt || now,
-        completedAt: task.done ? task.completedAt || now : null,
-      }));
+      return parsed.map((task) => {
+        let due = task.due;
+        if (due === "today") due = todayISO();
+        else if (due === "tomorrow") due = tomorrowISO();
+        else if (!due) due = todayISO();
+        return {
+          ...task,
+          due,
+          createdAt: task.createdAt || now,
+          completedAt: task.done ? task.completedAt || now : null,
+        };
+      });
     } catch {
       return seedTasks();
     }
@@ -218,7 +251,7 @@
 
   function seedTasks() {
     return [
-      { id: cryptoId(), text: sampleText(), done: false, due: "today", priority: true, createdAt: new Date().toISOString(), completedAt: null },
+      { id: cryptoId(), text: sampleText(), done: false, due: todayISO(), priority: true, createdAt: new Date().toISOString(), completedAt: null },
     ];
   }
 
@@ -286,7 +319,6 @@
   const calendarWeekdaysEl = el("calendar-weekdays");
   const calendarGridEl = el("calendar-grid");
   const calendarLegendTodayEl = el("calendar-legend-today");
-  const calendarLegendTomorrowEl = el("calendar-legend-tomorrow");
   const calendarPrevBtn = el("calendar-prev");
   const calendarNextBtn = el("calendar-next");
 
@@ -308,6 +340,9 @@
   const chipToday = document.querySelector('.chip[data-time="today"]');
   const chipTomorrow = document.querySelector('.chip[data-time="tomorrow"]');
   const chipPriority = el("priority-chip");
+  const dateChip = el("date-chip");
+  const dateChipText = el("date-chip-text");
+  const dateInput = el("date-input");
 
   /* ================= Toast ================= */
   let toastTimer = null;
@@ -344,7 +379,6 @@
     navMe.textContent = t.navMe;
     calendarHeadingEl.textContent = t.calendarHeading;
     calendarLegendTodayEl.textContent = t.calendarLegendToday;
-    calendarLegendTomorrowEl.textContent = t.calendarLegendTomorrow;
     listsHeadingEl.textContent = t.listsHeading;
     listsFilterButtons.forEach((btn) => {
       btn.textContent = t.filters[btn.dataset.filter];
@@ -382,9 +416,14 @@
   }
 
   function renderComposerChips() {
-    chipToday.classList.toggle("selected", composerDue === "today");
-    chipTomorrow.classList.toggle("selected", composerDue === "tomorrow");
+    const today = todayISO();
+    const tomorrow = tomorrowISO();
+    chipToday.classList.toggle("selected", composerDue === today);
+    chipTomorrow.classList.toggle("selected", composerDue === tomorrow);
     chipPriority.classList.toggle("selected", composerPriority);
+    const isCustom = composerDue !== today && composerDue !== tomorrow;
+    dateChip.classList.toggle("selected", isCustom);
+    dateChipText.textContent = isCustom ? shortDateLabel(composerDue) : STR[lang].pickDateChip;
   }
 
   function renderAssistant() {
@@ -400,15 +439,18 @@
 
   function dueLabel(due) {
     const t = STR[lang];
-    if (due === "today") return t.dueToday;
-    if (due === "tomorrow") return t.dueTomorrow;
-    return due;
+    if (due === todayISO()) return t.dueToday;
+    if (due === tomorrowISO()) return t.dueTomorrow;
+    return shortDateLabel(due);
   }
 
   function renderTasks() {
     const t = STR[lang];
-    const todays = tasks.filter((task) => task.due === "today" || task.done);
-    const upcoming = tasks.filter((task) => task.due !== "today" && !task.done);
+    const today = todayISO();
+    const todays = tasks.filter((task) => task.due === today || task.done);
+    const upcoming = tasks
+      .filter((task) => task.due !== today && !task.done)
+      .sort((a, b) => a.due.localeCompare(b.due));
 
     const doneCount = tasks.filter((task) => task.done).length;
     taskCountEl.textContent = tasks.length ? t.countFmt(doneCount, tasks.length) : "";
@@ -461,7 +503,7 @@
     text.textContent = task.text;
     body.appendChild(text);
 
-    if (task.priority || task.due !== "today") {
+    if (task.priority || task.due !== todayISO()) {
       const meta = document.createElement("div");
       meta.className = "task-meta";
       if (task.priority) {
@@ -470,7 +512,7 @@
         flag.textContent = "⚑";
         meta.appendChild(flag);
       }
-      if (task.due !== "today") {
+      if (task.due !== todayISO()) {
         const dueSpan = document.createElement("span");
         dueSpan.textContent = dueLabel(task.due);
         meta.appendChild(dueSpan);
@@ -494,7 +536,12 @@
     row.className = "upcoming-item";
     const badge = document.createElement("div");
     badge.className = "upcoming-date";
-    badge.textContent = dueLabel(task.due);
+    const d = new Date(`${task.due}T00:00:00`);
+    const dayEl = document.createElement("strong");
+    dayEl.textContent = String(d.getDate());
+    const monthEl = document.createElement("span");
+    monthEl.textContent = MONTH[lang][d.getMonth()];
+    badge.append(dayEl, monthEl);
     const text = document.createElement("div");
     text.className = "upcoming-text";
     text.textContent = task.text;
@@ -511,10 +558,7 @@
   /* ---- Calendar view ---- */
   function renderCalendar() {
     const t = STR[lang];
-    const now = new Date();
-    const isCurrentMonth = calendarCursor.getFullYear() === now.getFullYear() && calendarCursor.getMonth() === now.getMonth();
-    const todayPending = tasks.some((task) => task.due === "today" && !task.done);
-    const tomorrowPending = tasks.some((task) => task.due === "tomorrow" && !task.done);
+    const today = todayISO();
 
     calendarMonthLabelEl.textContent = `${MONTH_FULL[lang][calendarCursor.getMonth()]} ${calendarCursor.getFullYear()}`;
 
@@ -530,6 +574,11 @@
     const firstWeekday = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+    const pendingByDate = {};
+    tasks.forEach((task) => {
+      if (!task.done) pendingByDate[task.due] = (pendingByDate[task.due] || 0) + 1;
+    });
+
     calendarGridEl.innerHTML = "";
     for (let i = 0; i < firstWeekday; i++) {
       const blank = document.createElement("div");
@@ -537,20 +586,16 @@
       calendarGridEl.appendChild(blank);
     }
     for (let d = 1; d <= daysInMonth; d++) {
+      const iso = isoDate(new Date(year, month, d));
       const cell = document.createElement("div");
       cell.className = "calendar-day";
-      const isToday = isCurrentMonth && d === now.getDate();
-      const isTomorrow = isCurrentMonth && d === now.getDate() + 1;
-      if (isToday) cell.classList.add("is-today");
-      else if (isTomorrow) cell.classList.add("is-tomorrow");
+      if (iso === today) cell.classList.add("is-today");
       cell.textContent = String(d);
-      if (isToday && todayPending) {
+      const count = pendingByDate[iso] || 0;
+      if (count > 0) {
         const dot = document.createElement("span");
         dot.className = "dot dot-today";
-        cell.appendChild(dot);
-      } else if (isTomorrow && tomorrowPending) {
-        const dot = document.createElement("span");
-        dot.className = "dot dot-tomorrow";
+        dot.title = `${count}`;
         cell.appendChild(dot);
       }
       calendarGridEl.appendChild(cell);
@@ -560,8 +605,8 @@
   /* ---- Lists view ---- */
   function filteredTasks(filter) {
     if (filter === "all") return tasks;
-    if (filter === "today") return tasks.filter((t) => t.due === "today" && !t.done);
-    if (filter === "tomorrow") return tasks.filter((t) => t.due === "tomorrow" && !t.done);
+    if (filter === "today") return tasks.filter((t) => t.due === todayISO() && !t.done);
+    if (filter === "tomorrow") return tasks.filter((t) => t.due === tomorrowISO() && !t.done);
     if (filter === "priority") return tasks.filter((t) => t.priority && !t.done);
     if (filter === "done") return tasks.filter((t) => t.done);
     return tasks;
@@ -759,17 +804,31 @@
   });
 
   chipToday.addEventListener("click", () => {
-    composerDue = "today";
+    composerDue = todayISO();
     renderComposerChips();
   });
 
   chipTomorrow.addEventListener("click", () => {
-    composerDue = "tomorrow";
+    composerDue = tomorrowISO();
     renderComposerChips();
   });
 
   chipPriority.addEventListener("click", () => {
     composerPriority = !composerPriority;
+    renderComposerChips();
+  });
+
+  dateChip.addEventListener("click", () => {
+    if (typeof dateInput.showPicker === "function") {
+      dateInput.showPicker();
+    } else {
+      dateInput.focus();
+    }
+  });
+
+  dateInput.addEventListener("change", () => {
+    if (!dateInput.value) return;
+    composerDue = dateInput.value;
     renderComposerChips();
   });
 
@@ -845,6 +904,7 @@
 
   /* ================= Init ================= */
   langSelect.value = lang;
+  dateInput.min = todayISO();
   renderStaticText();
   renderComposerChips();
   renderTasks();
