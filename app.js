@@ -173,6 +173,8 @@
   const navCalendar = el("nav-calendar");
   const navLists = el("nav-lists");
   const navMe = el("nav-me");
+  const navButtons = Array.from(document.querySelectorAll(".bottom-nav .nav-item"));
+  const [navTodayBtn, navCalendarBtn, navListsBtn, navMeBtn] = navButtons;
   const chipToday = document.querySelector('.chip[data-time="today"]');
   const chipTomorrow = document.querySelector('.chip[data-time="tomorrow"]');
   const chipPriority = el("priority-chip");
@@ -426,17 +428,17 @@
     renderTasks();
   });
 
-  [navCalendar, navLists, navMe].forEach((btn) => {
+  [navCalendarBtn, navListsBtn, navMeBtn].forEach((btn) => {
     btn.addEventListener("click", () => {
-      [navToday, navCalendar, navLists, navMe].forEach((n) => n.classList.remove("active"));
+      navButtons.forEach((n) => n.classList.remove("active"));
       btn.classList.add("active");
       showToast(STR[lang].toastComingSoon);
     });
   });
 
-  navToday.addEventListener("click", () => {
-    [navToday, navCalendar, navLists, navMe].forEach((n) => n.classList.remove("active"));
-    navToday.classList.add("active");
+  navTodayBtn.addEventListener("click", () => {
+    navButtons.forEach((n) => n.classList.remove("active"));
+    navTodayBtn.classList.add("active");
     document.getElementById("today").scrollIntoView({ behavior: "smooth" });
   });
 
