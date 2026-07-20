@@ -29,7 +29,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --cream: #241a14;
     --cream-deep: #2c2019;
     --card: #2f231b;
@@ -41,6 +41,19 @@
     --sage-light: #263329;
     --white: #362820;
   }
+}
+
+:root[data-theme="dark"] {
+  --cream: #241a14;
+  --cream-deep: #2c2019;
+  --card: #2f231b;
+  --ink: #fbead9;
+  --ink-soft: #cbb29e;
+  --ink-faint: #6c5847;
+  --line: #4a392b;
+  --coat-wash: #3a2a1e;
+  --sage-light: #263329;
+  --white: #362820;
 }
 
 * {
@@ -998,6 +1011,84 @@ a:focus-visible {
 
 #profile-lang-options .chip[data-lang] {
   cursor: pointer;
+}
+
+.chip-select {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: var(--coat-wash);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.task-edit {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--ink-faint);
+  font-size: 0.95rem;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.task-edit:hover {
+  background: var(--coat-wash);
+  color: var(--coat-dark);
+}
+
+.task-edit-input {
+  width: 100%;
+  border: 1px solid var(--coat);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--cream);
+}
+
+.task-category {
+  background: var(--line);
+  color: var(--ink-soft);
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.profile-hint {
+  margin: -4px 0 10px;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.backup-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.secondary-button {
+  flex: 1;
+  min-width: 120px;
+  text-align: center;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--coat-wash);
+  border: 1.5px solid transparent;
+  color: var(--coat-dark);
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: background 0.15s ease;
+}
+
+.secondary-button:hover {
+  background: var(--coat-light);
 }
 
 .danger-button {

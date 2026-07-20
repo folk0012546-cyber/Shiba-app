@@ -31,6 +31,18 @@
       calendarLegendToday: "มีงานที่ต้องทำ",
       pickDateChip: "เลือกวันที่",
       calendarAgendaEmpty: "ไม่มีงานในวันนี้",
+      categories: { general: "ทั่วไป", home: "บ้าน", study: "เรียน", work: "งาน/ธุรกิจ" },
+      recurringOptions: { daily: "ทุกวัน", weekly: "ทุกสัปดาห์", monthly: "ทุกเดือน" },
+      recurringNone: "ไม่ซ้ำ",
+      profileThemeHeading: "ธีม",
+      themeChoice: { auto: "อัตโนมัติ", light: "สว่าง", dark: "มืด" },
+      profileBackupHeading: "สำรองข้อมูล",
+      profileBackupHint: "งานทั้งหมดเก็บอยู่ในเครื่องนี้เท่านั้น ควรบันทึกไฟล์สำรองไว้กันข้อมูลหาย",
+      exportButton: "ดาวน์โหลดข้อมูล",
+      importButton: "นำเข้าข้อมูล",
+      importConfirm: "นำเข้าไฟล์นี้จะแทนที่งานทั้งหมดที่มีอยู่ตอนนี้ ต้องการดำเนินการต่อไหม?",
+      importDone: "นำเข้าข้อมูลสำเร็จแล้ว",
+      importError: "ไฟล์นี้ใช้ไม่ได้ ลองเลือกไฟล์สำรองที่ถูกต้อง",
       listsHeading: "รายการทั้งหมด",
       listsCountFmt: (n) => `${n} รายการ`,
       filters: { all: "ทั้งหมด", today: "วันนี้", tomorrow: "พรุ่งนี้", priority: "สำคัญ", done: "เสร็จแล้ว" },
@@ -84,6 +96,18 @@
       calendarLegendToday: "Has tasks due",
       pickDateChip: "Pick date",
       calendarAgendaEmpty: "No tasks on this day",
+      categories: { general: "General", home: "Home", study: "Study", work: "Work" },
+      recurringOptions: { daily: "Daily", weekly: "Weekly", monthly: "Monthly" },
+      recurringNone: "No repeat",
+      profileThemeHeading: "Theme",
+      themeChoice: { auto: "Auto", light: "Light", dark: "Dark" },
+      profileBackupHeading: "Backup",
+      profileBackupHint: "Tasks are only stored on this device. Export a backup so you don't lose them.",
+      exportButton: "Export data",
+      importButton: "Import data",
+      importConfirm: "Importing this file will replace all current tasks. Continue?",
+      importDone: "Import complete",
+      importError: "That file isn't valid. Pick a correct backup file.",
       listsHeading: "All tasks",
       listsCountFmt: (n) => `${n} item${n === 1 ? "" : "s"}`,
       filters: { all: "All", today: "Today", tomorrow: "Tomorrow", priority: "Priority", done: "Done" },
@@ -137,6 +161,18 @@
       calendarLegendToday: "当天有任务",
       pickDateChip: "选日期",
       calendarAgendaEmpty: "这天没有任务",
+      categories: { general: "常规", home: "家庭", study: "学习", work: "工作" },
+      recurringOptions: { daily: "每天", weekly: "每周", monthly: "每月" },
+      recurringNone: "不重复",
+      profileThemeHeading: "主题",
+      themeChoice: { auto: "自动", light: "浅色", dark: "深色" },
+      profileBackupHeading: "备份",
+      profileBackupHint: "任务仅保存在本机，建议导出备份以防丢失。",
+      exportButton: "导出数据",
+      importButton: "导入数据",
+      importConfirm: "导入此文件将替换当前所有任务，确定继续吗？",
+      importDone: "导入完成",
+      importError: "文件无效，请选择正确的备份文件。",
       listsHeading: "全部任务",
       listsCountFmt: (n) => `${n} 项`,
       filters: { all: "全部", today: "今天", tomorrow: "明天", priority: "重要", done: "已完成" },
@@ -228,6 +264,9 @@
   let listsFilter = "all";
   let dashboardScope = "month"; // 'month' | 'quarter' | 'year'
   let dashboardCursor = new Date();
+  let editingTaskId = null;
+  const THEME_KEY = "shiba.theme.v1";
+  let theme = localStorage.getItem(THEME_KEY) || "auto"; // 'auto' | 'light' | 'dark'
 
   function loadTasks() {
     try {
@@ -244,6 +283,8 @@
         return {
           ...task,
           due,
+          category: task.category || "general",
+          recurring: task.recurring || "",
           createdAt: task.createdAt || now,
           completedAt: task.done ? task.completedAt || now : null,
         };
@@ -255,7 +296,7 @@
 
   function seedTasks() {
     return [
-      { id: cryptoId(), text: sampleText(), done: false, due: todayISO(), priority: true, createdAt: new Date().toISOString(), completedAt: null },
+      { id: cryptoId(), text: sampleText(), done: false, due: todayISO(), priority: true, category: "general", recurring: "", createdAt: new Date().toISOString(), completedAt: null },
     ];
   }
 
@@ -343,12 +384,21 @@
   const profileLangHeadingEl = el("profile-lang-heading");
   const profileResetBtn = el("profile-reset");
   const profileLangButtons = Array.from(document.querySelectorAll("#profile-lang-options .chip"));
+  const profileThemeHeadingEl = el("profile-theme-heading");
+  const themeButtons = Array.from(document.querySelectorAll("#profile-theme-options .chip"));
+  const profileBackupHeadingEl = el("profile-backup-heading");
+  const profileBackupHintEl = el("profile-backup-hint");
+  const profileExportBtn = el("profile-export");
+  const profileImportLabelEl = el("profile-import-label");
+  const importFileInput = el("import-file-input");
   const chipToday = document.querySelector('.chip[data-time="today"]');
   const chipTomorrow = document.querySelector('.chip[data-time="tomorrow"]');
   const chipPriority = el("priority-chip");
   const dateChip = el("date-chip");
   const dateChipText = el("date-chip-text");
   const dateInput = el("date-input");
+  const categorySelect = el("category-select");
+  const recurringSelect = el("recurring-select");
 
   /* ================= Toast ================= */
   let toastTimer = null;
@@ -404,6 +454,24 @@
     dashLabelCreatedEl.textContent = t.dashCreated;
     dashLabelCompletedEl.textContent = t.dashCompleted;
     dashLabelRateEl.textContent = t.dashRate;
+
+    Array.from(categorySelect.options).forEach((opt) => {
+      opt.textContent = t.categories[opt.value];
+    });
+    Array.from(recurringSelect.options).forEach((opt) => {
+      opt.textContent = opt.value ? t.recurringOptions[opt.value] : t.recurringNone;
+    });
+
+    profileThemeHeadingEl.textContent = t.profileThemeHeading;
+    themeButtons.forEach((btn) => {
+      btn.textContent = t.themeChoice[btn.dataset.themeChoice];
+      btn.classList.toggle("selected", btn.dataset.themeChoice === theme);
+    });
+    profileBackupHeadingEl.textContent = t.profileBackupHeading;
+    profileBackupHintEl.textContent = t.profileBackupHint;
+    profileExportBtn.textContent = t.exportButton;
+    profileImportLabelEl.textContent = t.importButton;
+
     renderDate();
   }
 
@@ -491,6 +559,7 @@
   }
 
   function taskRow(task) {
+    const t = STR[lang];
     const row = document.createElement("div");
     row.className = "task-item" + (task.done ? " done" : "");
     row.dataset.id = task.id;
@@ -504,27 +573,88 @@
 
     const body = document.createElement("div");
     body.className = "task-body";
-    const text = document.createElement("span");
-    text.className = "task-text";
-    text.textContent = task.text;
-    body.appendChild(text);
 
-    if (task.priority || task.due !== todayISO()) {
-      const meta = document.createElement("div");
-      meta.className = "task-meta";
-      if (task.priority) {
-        const flag = document.createElement("span");
-        flag.className = "task-flag";
-        flag.textContent = "⚑";
-        meta.appendChild(flag);
+    if (editingTaskId === task.id) {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "task-edit-input";
+      input.value = task.text;
+      let settled = false;
+      const commit = () => {
+        if (settled) return;
+        settled = true;
+        const val = input.value.trim();
+        if (val) task.text = val;
+        editingTaskId = null;
+        saveTasks();
+        refreshAll();
+      };
+      const cancel = () => {
+        settled = true;
+        editingTaskId = null;
+        refreshAll();
+      };
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commit();
+        } else if (e.key === "Escape") {
+          cancel();
+        }
+      });
+      input.addEventListener("blur", commit);
+      body.appendChild(input);
+      requestAnimationFrame(() => {
+        input.focus();
+        input.select();
+      });
+    } else {
+      const text = document.createElement("span");
+      text.className = "task-text";
+      text.textContent = task.text;
+      body.appendChild(text);
+
+      const showMeta = task.priority || task.due !== todayISO() || task.recurring || task.category !== "general";
+      if (showMeta) {
+        const meta = document.createElement("div");
+        meta.className = "task-meta";
+        if (task.priority) {
+          const flag = document.createElement("span");
+          flag.className = "task-flag";
+          flag.textContent = "⚑";
+          meta.appendChild(flag);
+        }
+        if (task.recurring) {
+          const rec = document.createElement("span");
+          rec.className = "task-flag";
+          rec.textContent = "🔁";
+          rec.title = t.recurringOptions[task.recurring];
+          meta.appendChild(rec);
+        }
+        if (task.due !== todayISO()) {
+          const dueSpan = document.createElement("span");
+          dueSpan.textContent = dueLabel(task.due);
+          meta.appendChild(dueSpan);
+        }
+        if (task.category && task.category !== "general") {
+          const catSpan = document.createElement("span");
+          catSpan.className = "task-category";
+          catSpan.textContent = t.categories[task.category];
+          meta.appendChild(catSpan);
+        }
+        body.appendChild(meta);
       }
-      if (task.due !== todayISO()) {
-        const dueSpan = document.createElement("span");
-        dueSpan.textContent = dueLabel(task.due);
-        meta.appendChild(dueSpan);
-      }
-      body.appendChild(meta);
     }
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "task-edit";
+    editBtn.type = "button";
+    editBtn.setAttribute("aria-label", "edit task");
+    editBtn.textContent = "✎";
+    editBtn.addEventListener("click", () => {
+      editingTaskId = task.id;
+      refreshAll();
+    });
 
     const del = document.createElement("button");
     del.className = "task-delete";
@@ -533,7 +663,7 @@
     del.textContent = "✕";
     del.addEventListener("click", () => deleteTask(task.id));
 
-    row.append(check, body, del);
+    row.append(check, body, editBtn, del);
     return row;
   }
 
@@ -768,6 +898,7 @@
 
   function switchView(name) {
     if (!VIEWS[name]) return;
+    editingTaskId = null;
     Object.entries(VIEWS).forEach(([key, node]) => {
       node.hidden = key !== name;
     });
@@ -789,6 +920,14 @@
     else if (currentView === "dashboard") renderDashboard();
   }
 
+  function advanceDate(iso, freq) {
+    const d = new Date(`${iso}T00:00:00`);
+    if (freq === "daily") d.setDate(d.getDate() + 1);
+    else if (freq === "weekly") d.setDate(d.getDate() + 7);
+    else if (freq === "monthly") d.setMonth(d.getMonth() + 1);
+    return isoDate(d);
+  }
+
   function addTask(text) {
     const trimmed = text.trim();
     if (!trimmed) return;
@@ -798,6 +937,8 @@
       done: false,
       due: composerDue,
       priority: composerPriority,
+      category: categorySelect.value,
+      recurring: recurringSelect.value,
       createdAt: new Date().toISOString(),
       completedAt: null,
     });
@@ -812,6 +953,19 @@
     if (!task) return;
     task.done = !task.done;
     task.completedAt = task.done ? new Date().toISOString() : null;
+    if (task.done && task.recurring) {
+      tasks.unshift({
+        id: cryptoId(),
+        text: task.text,
+        done: false,
+        due: advanceDate(task.due, task.recurring),
+        priority: task.priority,
+        category: task.category,
+        recurring: task.recurring,
+        createdAt: new Date().toISOString(),
+        completedAt: null,
+      });
+    }
     saveTasks();
     refreshAll();
   }
@@ -929,9 +1083,74 @@
     showToast(t.resetDone);
   });
 
+  function applyTheme() {
+    if (theme === "auto") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", theme);
+    themeButtons.forEach((btn) => btn.classList.toggle("selected", btn.dataset.themeChoice === theme));
+  }
+
+  themeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      theme = btn.dataset.themeChoice;
+      localStorage.setItem(THEME_KEY, theme);
+      applyTheme();
+    });
+  });
+
+  profileExportBtn.addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `shiba-tasks-${todayISO()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  importFileInput.addEventListener("change", () => {
+    const file = importFileInput.files[0];
+    if (!file) return;
+    const t = STR[lang];
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        if (!Array.isArray(parsed)) throw new Error("invalid backup");
+        if (!window.confirm(t.importConfirm)) {
+          importFileInput.value = "";
+          return;
+        }
+        const now = new Date().toISOString();
+        tasks = parsed
+          .filter((task) => task && typeof task.text === "string" && task.text.trim())
+          .map((task) => ({
+            id: task.id || cryptoId(),
+            text: task.text,
+            done: !!task.done,
+            due: task.due || todayISO(),
+            priority: !!task.priority,
+            category: task.category || "general",
+            recurring: task.recurring || "",
+            createdAt: task.createdAt || now,
+            completedAt: task.done ? task.completedAt || now : null,
+          }));
+        saveTasks();
+        refreshAll();
+        showToast(t.importDone);
+      } catch {
+        showToast(t.importError);
+      }
+      importFileInput.value = "";
+    };
+    reader.readAsText(file);
+  });
+
   /* ================= Init ================= */
   langSelect.value = lang;
   dateInput.min = todayISO();
+  applyTheme();
   renderStaticText();
   renderComposerChips();
   renderTasks();
