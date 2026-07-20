@@ -1,6 +1,20 @@
 (() => {
   "use strict";
 
+  /* ================= Quick-add via URL (?add=...) ================= */
+  // Captured immediately so a page reload later doesn't re-trigger it.
+  let pendingQuickAddText = null;
+  {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get("add");
+    if (raw) {
+      pendingQuickAddText = raw;
+      params.delete("add");
+      const cleanUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash;
+      window.history.replaceState({}, "", cleanUrl);
+    }
+  }
+
   /* ================= i18n ================= */
   const STR = {
     th: {
@@ -63,6 +77,7 @@
       signInError: "เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง",
       signedInAsFmt: (email) => `เข้าสู่ระบบด้วย ${email}`,
       profileSignoutText: "ออกจากระบบ",
+      quickAddedFmt: (text) => `เพิ่มงานแล้ว: ${text}`,
       listsHeading: "รายการทั้งหมด",
       listsCountFmt: (n) => `${n} รายการ`,
       filters: { all: "ทั้งหมด", today: "วันนี้", tomorrow: "พรุ่งนี้", priority: "สำคัญ", done: "เสร็จแล้ว" },
@@ -148,6 +163,7 @@
       signInError: "Sign-in failed. Please try again.",
       signedInAsFmt: (email) => `Signed in as ${email}`,
       profileSignoutText: "Sign out",
+      quickAddedFmt: (text) => `Added: ${text}`,
       listsHeading: "All tasks",
       listsCountFmt: (n) => `${n} item${n === 1 ? "" : "s"}`,
       filters: { all: "All", today: "Today", tomorrow: "Tomorrow", priority: "Priority", done: "Done" },
@@ -233,6 +249,7 @@
       signInError: "登录失败，请重试。",
       signedInAsFmt: (email) => `已登录：${email}`,
       profileSignoutText: "退出登录",
+      quickAddedFmt: (text) => `已添加：${text}`,
       listsHeading: "全部任务",
       listsCountFmt: (n) => `${n} 项`,
       filters: { all: "全部", today: "今天", tomorrow: "明天", priority: "重要", done: "已完成" },
@@ -351,17 +368,30 @@
   }
 
   function initFirebaseSync() {
-    if (!firebaseReady || !tasksRef) return;
+    if (!firebaseReady || !tasksRef) {
+      applyPendingQuickAdd();
+      return;
+    }
     tasksRef
       .once("value")
       .then((snap) => {
         if (!snap.exists()) {
           // First device to connect: push what's stored locally so it becomes the shared copy.
           syncTasksToFirebase();
+        } else {
+          const val = snap.val();
+          const now = new Date().toISOString();
+          tasks = Object.keys(val).map((id) => normalizeRemoteTask(id, val[id], now));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+          refreshAll();
         }
+        applyPendingQuickAdd();
         attachFirebaseListener();
       })
-      .catch((err) => console.warn("Firebase initial read failed", err));
+      .catch((err) => {
+        console.warn("Firebase initial read failed", err);
+        applyPendingQuickAdd();
+      });
   }
 
   const loginScreenEl = document.getElementById("login-screen");
@@ -1206,6 +1236,28 @@
     if (hadDone) showToast(STR[lang].toastCleared);
   }
 
+  function applyPendingQuickAdd() {
+    if (!pendingQuickAddText) return;
+    const text = pendingQuickAddText.trim();
+    pendingQuickAddText = null;
+    if (!text) return;
+    tasks.unshift({
+      id: cryptoId(),
+      text,
+      done: false,
+      due: todayISO(),
+      priority: false,
+      category: "general",
+      recurring: "",
+      createdAt: new Date().toISOString(),
+      completedAt: null,
+    });
+    saveTasks();
+    switchView("today");
+    refreshAll();
+    showToast(STR[lang].quickAddedFmt(text));
+  }
+
   /* ================= Events ================= */
   taskForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -1469,6 +1521,7 @@
   renderComposerChips();
   renderTasks();
   checkReminderNotification(false);
+  if (!firebaseReady || !auth) applyPendingQuickAdd();
 
   // Keep the date line fresh if the app stays open past midnight.
   setInterval(renderDate, 60 * 1000);
