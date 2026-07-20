@@ -207,6 +207,69 @@ a:focus-visible {
 /* ===================================================================
    Hero — the signature shiba illustration
 =================================================================== */
+.login-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 36px 28px;
+  box-shadow: var(--shadow-lg);
+}
+
+.login-brand-mark {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  font-size: 1.8rem;
+  margin: 0 auto 18px;
+}
+
+.login-card h1 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.login-card p {
+  margin: 0 0 24px;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.google-signin-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: var(--radius-md);
+  background: var(--coat);
+  color: var(--white);
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 6px 16px -4px rgba(232, 117, 47, 0.45);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.google-signin-btn:hover {
+  background: var(--coat-dark);
+  transform: translateY(-1px);
+}
+
 .hero {
   display: flex;
   align-items: center;

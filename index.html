@@ -20,7 +20,17 @@
     <meta name="mobile-web-app-capable" content="yes" />
   </head>
   <body>
-    <main class="app-shell">
+    <div class="login-screen" id="login-screen">
+      <div class="login-card">
+        <div class="brand-mark login-brand-mark" aria-hidden="true">🐕</div>
+        <h1 id="login-title"></h1>
+        <p id="login-copy"></p>
+        <button class="google-signin-btn" id="google-signin-btn" type="button">
+          <span>🔐</span> <span id="google-signin-text"></span>
+        </button>
+      </div>
+    </div>
+    <main class="app-shell" id="app-shell" hidden>
       <header class="topbar">
         <a class="brand" href="#today" aria-label="Shiba Remembers">
           <span class="brand-mark" aria-hidden="true">🐕</span>
@@ -166,6 +176,7 @@
         <div class="section-heading">
           <div><h2 id="profile-heading"></h2></div>
         </div>
+        <p class="profile-hint" id="profile-signed-in-as"></p>
         <div class="profile-card">
           <div class="profile-avatar" aria-hidden="true">🌈</div>
           <div class="profile-stats">
@@ -214,17 +225,23 @@
           </div>
         </div>
         <div class="profile-section">
+          <button class="secondary-button" id="profile-signout" type="button"></button>
+        </div>
+        <div class="profile-section">
           <button class="danger-button" id="profile-reset" type="button"></button>
         </div>
       </div>
     </main>
-    <nav class="bottom-nav" aria-label="Main navigation">
+    <nav class="bottom-nav" id="bottom-nav" aria-label="Main navigation" hidden>
       <button class="nav-item active" type="button" data-view="today"><span>⌂</span><span id="nav-today"></span></button>
       <button class="nav-item" type="button" data-view="dashboard"><span>📊</span><span id="nav-dashboard"></span></button>
       <button class="nav-item" type="button" data-view="calendar"><span>□</span><span id="nav-calendar"></span></button>
       <button class="nav-item" type="button" data-view="lists"><span>✓</span><span id="nav-lists"></span></button>
       <button class="nav-item" type="button" data-view="profile"><span>🌈</span><span id="nav-me"></span></button>
     </nav>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
     <script src="app.js"></script>
     <script>
       if ("serviceWorker" in navigator) {

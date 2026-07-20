@@ -57,6 +57,12 @@
       notifBodyFmt: (n) => `วันนี้มีงานค้างอยู่ ${n} งาน ลองเข้ามาดูกันเถอะ 🐾`,
       notifBodyEmpty: "วันนี้ไม่มีงานค้างเลย เก่งมาก! 🐾",
       notifAckAction: "รับทราบ",
+      loginTitle: "ชิบะช่วยจำ",
+      loginCopy: "เข้าสู่ระบบก่อนเพื่อดูและซิงก์งานของคุณระหว่างอุปกรณ์",
+      googleSigninText: "เข้าสู่ระบบด้วย Google",
+      signInError: "เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง",
+      signedInAsFmt: (email) => `เข้าสู่ระบบด้วย ${email}`,
+      profileSignoutText: "ออกจากระบบ",
       listsHeading: "รายการทั้งหมด",
       listsCountFmt: (n) => `${n} รายการ`,
       filters: { all: "ทั้งหมด", today: "วันนี้", tomorrow: "พรุ่งนี้", priority: "สำคัญ", done: "เสร็จแล้ว" },
@@ -136,6 +142,12 @@
       notifBodyFmt: (n) => `You have ${n} unfinished task${n === 1 ? "" : "s"} today — take a look! 🐾`,
       notifBodyEmpty: "Nothing left today. Nice work! 🐾",
       notifAckAction: "Got it",
+      loginTitle: "Shiba Remembers",
+      loginCopy: "Sign in to see and sync your tasks across devices.",
+      googleSigninText: "Sign in with Google",
+      signInError: "Sign-in failed. Please try again.",
+      signedInAsFmt: (email) => `Signed in as ${email}`,
+      profileSignoutText: "Sign out",
       listsHeading: "All tasks",
       listsCountFmt: (n) => `${n} item${n === 1 ? "" : "s"}`,
       filters: { all: "All", today: "Today", tomorrow: "Tomorrow", priority: "Priority", done: "Done" },
@@ -215,6 +227,12 @@
       notifBodyFmt: (n) => `今天还有 ${n} 项任务没完成，来看看吧 🐾`,
       notifBodyEmpty: "今天的任务都完成了，真棒！🐾",
       notifAckAction: "知道了",
+      loginTitle: "柴柴帮你记",
+      loginCopy: "登录后即可查看并在各设备间同步你的任务。",
+      googleSigninText: "使用 Google 登录",
+      signInError: "登录失败，请重试。",
+      signedInAsFmt: (email) => `已登录：${email}`,
+      profileSignoutText: "退出登录",
       listsHeading: "全部任务",
       listsCountFmt: (n) => `${n} 项`,
       filters: { all: "全部", today: "今天", tomorrow: "明天", priority: "重要", done: "已完成" },
@@ -268,6 +286,139 @@
 
   const STORAGE_KEY = "shiba.tasks.v1";
   const LANG_KEY = "shiba.lang.v1";
+
+  /* ================= Firebase sync (Realtime Database) ================= */
+  const firebaseConfig = {
+    apiKey: "AIzaSyCrnBTo9jVZDaMndafCOsBwJmmuSK7p-CI",
+    authDomain: "shiba-dbc0a.firebaseapp.com",
+    databaseURL: "https://shiba-dbc0a-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "shiba-dbc0a",
+    storageBucket: "shiba-dbc0a.firebasestorage.app",
+    messagingSenderId: "438507071339",
+    appId: "1:438507071339:web:2540b958bde5c175a08e2e",
+  };
+
+  let tasksRef = null;
+  let auth = null;
+  let firebaseReady = false;
+  try {
+    if (typeof firebase !== "undefined") {
+      firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      firebaseReady = true;
+    }
+  } catch (e) {
+    console.warn("Firebase init failed; continuing with local storage only.", e);
+  }
+
+  function syncTasksToFirebase() {
+    if (!firebaseReady || !tasksRef) return;
+    const obj = {};
+    tasks.forEach((task) => {
+      obj[task.id] = task;
+    });
+    tasksRef.set(obj).catch((err) => console.warn("Firebase sync failed", err));
+  }
+
+  function normalizeRemoteTask(id, task, now) {
+    let due = task.due;
+    if (due === "today") due = todayISO();
+    else if (due === "tomorrow") due = tomorrowISO();
+    else if (!due) due = todayISO();
+    return {
+      id,
+      text: task.text || "",
+      done: !!task.done,
+      due,
+      priority: !!task.priority,
+      category: task.category || "general",
+      recurring: task.recurring || "",
+      createdAt: task.createdAt || now,
+      completedAt: task.done ? task.completedAt || now : null,
+    };
+  }
+
+  function attachFirebaseListener() {
+    if (!firebaseReady || !tasksRef) return;
+    tasksRef.on("value", (snapshot) => {
+      const val = snapshot.val();
+      if (!val) return; // nothing on the server yet; keep showing local tasks
+      const now = new Date().toISOString();
+      tasks = Object.keys(val).map((id) => normalizeRemoteTask(id, val[id], now));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      refreshAll();
+    });
+  }
+
+  function initFirebaseSync() {
+    if (!firebaseReady || !tasksRef) return;
+    tasksRef
+      .once("value")
+      .then((snap) => {
+        if (!snap.exists()) {
+          // First device to connect: push what's stored locally so it becomes the shared copy.
+          syncTasksToFirebase();
+        }
+        attachFirebaseListener();
+      })
+      .catch((err) => console.warn("Firebase initial read failed", err));
+  }
+
+  const loginScreenEl = document.getElementById("login-screen");
+  const appShellEl = document.getElementById("app-shell");
+  const bottomNavEl = document.getElementById("bottom-nav");
+  const googleSigninBtn = document.getElementById("google-signin-btn");
+  const profileSignedInAsEl = document.getElementById("profile-signed-in-as");
+  const profileSignoutBtn = document.getElementById("profile-signout");
+
+  function showApp(user) {
+    loginScreenEl.hidden = true;
+    appShellEl.hidden = false;
+    bottomNavEl.hidden = false;
+    if (profileSignedInAsEl) {
+      profileSignedInAsEl.textContent = (STR[lang].signedInAsFmt || ((e) => e))(user.email || user.displayName || "");
+    }
+    tasksRef = firebase.database().ref("tasks/" + user.uid);
+    initFirebaseSync();
+  }
+
+  function showLoginScreen() {
+    if (tasksRef) tasksRef.off();
+    tasksRef = null;
+    loginScreenEl.hidden = false;
+    appShellEl.hidden = true;
+    bottomNavEl.hidden = true;
+  }
+
+  if (firebaseReady && auth) {
+    auth.onAuthStateChanged((user) => {
+      if (user) showApp(user);
+      else showLoginScreen();
+    });
+  } else {
+    // No Firebase available at all: fall back to showing the app directly.
+    loginScreenEl.hidden = true;
+    appShellEl.hidden = false;
+    bottomNavEl.hidden = false;
+  }
+
+  if (googleSigninBtn) {
+    googleSigninBtn.addEventListener("click", () => {
+      if (!firebaseReady || !auth) return;
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch((err) => {
+        console.warn("Sign-in failed", err);
+        showToast(STR[lang].signInError || "Sign-in failed");
+      });
+    });
+  }
+
+  if (profileSignoutBtn) {
+    profileSignoutBtn.addEventListener("click", () => {
+      if (!firebaseReady || !auth) return;
+      auth.signOut();
+    });
+  }
 
   /* ================= Date helpers ================= */
   function pad2(n) {
@@ -358,6 +509,7 @@
 
   function saveTasks() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    syncTasksToFirebase();
   }
 
   /* ================= DOM refs ================= */
@@ -533,6 +685,14 @@
       opt.textContent = t.notifIntervalOptions[opt.value];
     });
     notifIntervalRow.hidden = !notificationsOn;
+
+    const loginTitleEl = document.getElementById("login-title");
+    const loginCopyEl = document.getElementById("login-copy");
+    const googleSigninTextEl = document.getElementById("google-signin-text");
+    if (loginTitleEl) loginTitleEl.textContent = t.loginTitle;
+    if (loginCopyEl) loginCopyEl.textContent = t.loginCopy;
+    if (googleSigninTextEl) googleSigninTextEl.textContent = t.googleSigninText;
+    if (profileSignoutBtn) profileSignoutBtn.textContent = t.profileSignoutText;
 
     renderDate();
   }
