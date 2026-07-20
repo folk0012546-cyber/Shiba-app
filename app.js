@@ -821,7 +821,10 @@
     check.type = "button";
     check.setAttribute("aria-label", "toggle done");
     check.textContent = "✓";
-    check.addEventListener("click", () => toggleDone(task.id));
+    check.addEventListener("click", () => {
+      row.classList.add("pulse");
+      setTimeout(() => toggleDone(task.id), 140);
+    });
 
     const body = document.createElement("div");
     body.className = "task-body";
@@ -913,7 +916,10 @@
     del.type = "button";
     del.setAttribute("aria-label", "delete task");
     del.textContent = "✕";
-    del.addEventListener("click", () => deleteTask(task.id));
+    del.addEventListener("click", () => {
+      row.classList.add("removing");
+      setTimeout(() => deleteTask(task.id), 180);
+    });
 
     row.append(check, body, editBtn, del);
     return row;
@@ -1116,12 +1122,31 @@
     return { label: period.label, created, completed, rate, chartData };
   }
 
+  function animateNumber(el, to, formatter) {
+    const fmt = formatter || ((v) => String(v));
+    const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const from = parseInt(el.textContent, 10) || 0;
+    if (prefersReducedMotion || from === to) {
+      el.textContent = fmt(to);
+      return;
+    }
+    const duration = 450;
+    const start = performance.now();
+    function step(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 2);
+      el.textContent = fmt(Math.round(from + (to - from) * eased));
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
   function renderDashboard() {
     const data = computeDashboard(dashboardScope, dashboardCursor);
     dashboardPeriodLabelEl.textContent = data.label;
-    dashStatCreatedEl.textContent = String(data.created);
-    dashStatCompletedEl.textContent = String(data.completed);
-    dashStatRateEl.textContent = `${data.rate}%`;
+    animateNumber(dashStatCreatedEl, data.created);
+    animateNumber(dashStatCompletedEl, data.completed);
+    animateNumber(dashStatRateEl, data.rate, (v) => `${v}%`);
 
     const maxCount = Math.max(1, ...data.chartData.map((d) => d.count));
     dashboardChartEl.innerHTML = "";
@@ -1148,12 +1173,23 @@
   }
 
 
+  function playViewEnterAnimation(node) {
+    const isContents = getComputedStyle(node).display === "contents";
+    const targets = isContents ? Array.from(node.children) : [node];
+    targets.forEach((el) => {
+      el.classList.remove("view-enter");
+      void el.offsetWidth; // force reflow so the animation restarts every time
+      el.classList.add("view-enter");
+    });
+  }
+
   function switchView(name) {
     if (!VIEWS[name]) return;
     editingTaskId = null;
     Object.entries(VIEWS).forEach(([key, node]) => {
       node.hidden = key !== name;
     });
+    playViewEnterAnimation(VIEWS[name]);
     navButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.view === name));
     currentView = name;
     if (name === "calendar") renderCalendar();
@@ -1295,7 +1331,11 @@
     renderComposerChips();
   });
 
-  clearDoneBtn.addEventListener("click", clearDone);
+  clearDoneBtn.addEventListener("click", () => {
+    const doneRows = document.querySelectorAll(".task-item.done");
+    doneRows.forEach((row) => row.classList.add("removing"));
+    setTimeout(clearDone, 180);
+  });
 
   langSelect.addEventListener("change", () => {
     lang = langSelect.value;
