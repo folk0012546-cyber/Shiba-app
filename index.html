@@ -62,8 +62,10 @@
             <button class="chip" type="button" data-time="today"><span>◷</span><span id="today-chip"></span></button>
             <button class="chip" type="button" data-time="tomorrow"><span>☀</span><span id="tomorrow-chip"></span></button>
             <button class="chip" type="button" id="priority-chip"><span>⚑</span><span id="priority-chip-text"></span></button>
-            <label class="chip" for="date-input" id="date-chip"><span>📅</span><span id="date-chip-text"></span></label>
-            <input type="date" id="date-input" class="sr-date-input" aria-label="Pick a due date" />
+            <div class="date-chip-wrap">
+              <label class="chip" for="date-input" id="date-chip"><span>📅</span><span id="date-chip-text"></span></label>
+              <input type="date" id="date-input" class="date-input-overlay" aria-label="Pick a due date" />
+            </div>
             <select id="category-select" class="chip-select" aria-label="Category">
               <option value="general"></option>
               <option value="home"></option>
