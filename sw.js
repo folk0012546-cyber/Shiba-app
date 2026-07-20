@@ -72,3 +72,17 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  if (event.action === "ack") {
+    return; // just dismiss, no need to open the app
+  }
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
+      const existing = clientsArr.find((c) => c.url.includes(self.registration.scope));
+      if (existing) return existing.focus();
+      return self.clients.openWindow(self.registration.scope);
+    })
+  );
+});
