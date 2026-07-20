@@ -43,6 +43,20 @@
       importConfirm: "นำเข้าไฟล์นี้จะแทนที่งานทั้งหมดที่มีอยู่ตอนนี้ ต้องการดำเนินการต่อไหม?",
       importDone: "นำเข้าข้อมูลสำเร็จแล้ว",
       importError: "ไฟล์นี้ใช้ไม่ได้ ลองเลือกไฟล์สำรองที่ถูกต้อง",
+      profileNotifHeading: "การแจ้งเตือน",
+      profileNotifHint: "เตือนซ้ำเรื่อยๆ ตามรอบที่ตั้งไว้ ตราบใดที่ยังมีงานค้าง (ต้องเปิดแอปหรือแท็บนี้ค้างไว้ถึงจะเตือนได้)",
+      notifOn: "เปิดใช้งานอยู่ · แตะเพื่อปิด",
+      notifOff: "แตะเพื่อเปิดการแจ้งเตือน",
+      notifIntervalLabel: "เตือนทุก",
+      notifIntervalOptions: { "30": "30 นาที", "60": "1 ชั่วโมง", "120": "2 ชั่วโมง", "180": "3 ชั่วโมง" },
+      notifUnsupported: "อุปกรณ์นี้ไม่รองรับการแจ้งเตือน",
+      notifDenied: "ไม่ได้รับอนุญาตให้แจ้งเตือน กรุณาเปิดสิทธิ์ในตั้งค่าเบราว์เซอร์",
+      notifEnabled: "เปิดการแจ้งเตือนแล้ว",
+      notifDisabled: "ปิดการแจ้งเตือนแล้ว",
+      notifTitle: "ชิบะช่วยจำ",
+      notifBodyFmt: (n) => `วันนี้มีงานค้างอยู่ ${n} งาน ลองเข้ามาดูกันเถอะ 🐾`,
+      notifBodyEmpty: "วันนี้ไม่มีงานค้างเลย เก่งมาก! 🐾",
+      notifAckAction: "รับทราบ",
       listsHeading: "รายการทั้งหมด",
       listsCountFmt: (n) => `${n} รายการ`,
       filters: { all: "ทั้งหมด", today: "วันนี้", tomorrow: "พรุ่งนี้", priority: "สำคัญ", done: "เสร็จแล้ว" },
@@ -108,6 +122,20 @@
       importConfirm: "Importing this file will replace all current tasks. Continue?",
       importDone: "Import complete",
       importError: "That file isn't valid. Pick a correct backup file.",
+      profileNotifHeading: "Notifications",
+      profileNotifHint: "Repeats on the schedule below as long as tasks are still pending (the app or this tab needs to stay open to notify).",
+      notifOn: "On · tap to turn off",
+      notifOff: "Tap to enable notifications",
+      notifIntervalLabel: "Remind every",
+      notifIntervalOptions: { "30": "30 min", "60": "1 hour", "120": "2 hours", "180": "3 hours" },
+      notifUnsupported: "This device doesn't support notifications",
+      notifDenied: "Notification permission was not granted. Enable it in your browser settings.",
+      notifEnabled: "Notifications enabled",
+      notifDisabled: "Notifications disabled",
+      notifTitle: "Shiba Remembers",
+      notifBodyFmt: (n) => `You have ${n} unfinished task${n === 1 ? "" : "s"} today — take a look! 🐾`,
+      notifBodyEmpty: "Nothing left today. Nice work! 🐾",
+      notifAckAction: "Got it",
       listsHeading: "All tasks",
       listsCountFmt: (n) => `${n} item${n === 1 ? "" : "s"}`,
       filters: { all: "All", today: "Today", tomorrow: "Tomorrow", priority: "Priority", done: "Done" },
@@ -173,6 +201,20 @@
       importConfirm: "导入此文件将替换当前所有任务，确定继续吗？",
       importDone: "导入完成",
       importError: "文件无效，请选择正确的备份文件。",
+      profileNotifHeading: "通知提醒",
+      profileNotifHint: "只要还有未完成的任务，就会按下面设置的间隔重复提醒（需要应用或此标签页保持打开才能提醒）。",
+      notifOn: "已开启 · 点击关闭",
+      notifOff: "点击开启通知",
+      notifIntervalLabel: "提醒间隔",
+      notifIntervalOptions: { "30": "30分钟", "60": "1小时", "120": "2小时", "180": "3小时" },
+      notifUnsupported: "此设备不支持通知功能",
+      notifDenied: "未获得通知权限，请在浏览器设置中开启。",
+      notifEnabled: "已开启通知",
+      notifDisabled: "已关闭通知",
+      notifTitle: "柴柴帮你记",
+      notifBodyFmt: (n) => `今天还有 ${n} 项任务没完成，来看看吧 🐾`,
+      notifBodyEmpty: "今天的任务都完成了，真棒！🐾",
+      notifAckAction: "知道了",
       listsHeading: "全部任务",
       listsCountFmt: (n) => `${n} 项`,
       filters: { all: "全部", today: "今天", tomorrow: "明天", priority: "重要", done: "已完成" },
@@ -267,6 +309,12 @@
   let editingTaskId = null;
   const THEME_KEY = "shiba.theme.v1";
   let theme = localStorage.getItem(THEME_KEY) || "auto"; // 'auto' | 'light' | 'dark'
+  const NOTIF_KEY = "shiba.notifications.v1";
+  const LAST_NOTIF_TS_KEY = "shiba.lastNotifiedAt.v1";
+  const LAST_EMPTY_PRAISE_KEY = "shiba.lastEmptyPraiseDate.v1";
+  const NOTIF_INTERVAL_KEY = "shiba.notifInterval.v1";
+  let notificationsOn = localStorage.getItem(NOTIF_KEY) === "on";
+  let notifIntervalMinutes = Number(localStorage.getItem(NOTIF_INTERVAL_KEY)) || 60;
 
   function loadTasks() {
     try {
@@ -386,6 +434,12 @@
   const profileLangButtons = Array.from(document.querySelectorAll("#profile-lang-options .chip"));
   const profileThemeHeadingEl = el("profile-theme-heading");
   const themeButtons = Array.from(document.querySelectorAll("#profile-theme-options .chip"));
+  const profileNotifHeadingEl = el("profile-notif-heading");
+  const profileNotifHintEl = el("profile-notif-hint");
+  const profileNotifToggleBtn = el("profile-notif-toggle");
+  const notifIntervalRow = el("notif-interval-row");
+  const notifIntervalLabelEl = el("notif-interval-label");
+  const notifIntervalSelect = el("notif-interval-select");
   const profileBackupHeadingEl = el("profile-backup-heading");
   const profileBackupHintEl = el("profile-backup-hint");
   const profileExportBtn = el("profile-export");
@@ -471,6 +525,14 @@
     profileBackupHintEl.textContent = t.profileBackupHint;
     profileExportBtn.textContent = t.exportButton;
     profileImportLabelEl.textContent = t.importButton;
+    profileNotifHeadingEl.textContent = t.profileNotifHeading;
+    profileNotifHintEl.textContent = t.profileNotifHint;
+    profileNotifToggleBtn.textContent = notificationsOn ? t.notifOn : t.notifOff;
+    notifIntervalLabelEl.textContent = t.notifIntervalLabel;
+    Array.from(notifIntervalSelect.options).forEach((opt) => {
+      opt.textContent = t.notifIntervalOptions[opt.value];
+    });
+    notifIntervalRow.hidden = !notificationsOn;
 
     renderDate();
   }
@@ -1089,6 +1151,89 @@
     themeButtons.forEach((btn) => btn.classList.toggle("selected", btn.dataset.themeChoice === theme));
   }
 
+  async function fireReminder(body) {
+    const t = STR[lang];
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(t.notifTitle, {
+        body,
+        icon: "./icon-192.png",
+        badge: "./icon-192.png",
+        tag: "shiba-daily",
+        requireInteraction: true,
+        actions: [{ action: "ack", title: t.notifAckAction }],
+      });
+    } catch {
+      try {
+        new Notification(t.notifTitle, { body });
+      } catch {
+        /* notifications unsupported in this context; fail silently */
+      }
+    }
+  }
+
+  async function checkReminderNotification(force) {
+    if (!notificationsOn) return;
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    const today = todayISO();
+    const pending = tasks.filter((task) => !task.done && task.due <= today).length;
+    const now = Date.now();
+    const t = STR[lang];
+
+    if (pending === 0) {
+      // Nothing pending: praise once per day, don't keep repeating it.
+      if (!force && localStorage.getItem(LAST_EMPTY_PRAISE_KEY) === today) return;
+      await fireReminder(t.notifBodyEmpty);
+      localStorage.setItem(LAST_EMPTY_PRAISE_KEY, today);
+      localStorage.setItem(LAST_NOTIF_TS_KEY, String(now));
+      return;
+    }
+
+    const lastTs = Number(localStorage.getItem(LAST_NOTIF_TS_KEY)) || 0;
+    const intervalMs = notifIntervalMinutes * 60 * 1000;
+    if (!force && now - lastTs < intervalMs) return;
+    await fireReminder(t.notifBodyFmt(pending));
+    localStorage.setItem(LAST_NOTIF_TS_KEY, String(now));
+  }
+
+  profileNotifToggleBtn.addEventListener("click", async () => {
+    const t = STR[lang];
+    if (!("Notification" in window)) {
+      showToast(t.notifUnsupported);
+      return;
+    }
+    if (!notificationsOn) {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        showToast(t.notifDenied);
+        return;
+      }
+      notificationsOn = true;
+      localStorage.setItem(NOTIF_KEY, "on");
+      showToast(t.notifEnabled);
+      checkReminderNotification(true);
+    } else {
+      notificationsOn = false;
+      localStorage.setItem(NOTIF_KEY, "off");
+      showToast(t.notifDisabled);
+    }
+    profileNotifToggleBtn.textContent = notificationsOn ? t.notifOn : t.notifOff;
+    notifIntervalRow.hidden = !notificationsOn;
+  });
+
+  notifIntervalSelect.addEventListener("change", () => {
+    notifIntervalMinutes = Number(notifIntervalSelect.value) || 60;
+    localStorage.setItem(NOTIF_INTERVAL_KEY, String(notifIntervalMinutes));
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") checkReminderNotification(false);
+  });
+
+  // Re-check periodically while the tab stays open, so reminders can repeat
+  // on the chosen interval without requiring the person to reopen the app.
+  setInterval(() => checkReminderNotification(false), 5 * 60 * 1000);
+
   themeButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       theme = btn.dataset.themeChoice;
@@ -1150,10 +1295,12 @@
   /* ================= Init ================= */
   langSelect.value = lang;
   dateInput.min = todayISO();
+  notifIntervalSelect.value = String(notifIntervalMinutes);
   applyTheme();
   renderStaticText();
   renderComposerChips();
   renderTasks();
+  checkReminderNotification(false);
 
   // Keep the date line fresh if the app stays open past midnight.
   setInterval(renderDate, 60 * 1000);

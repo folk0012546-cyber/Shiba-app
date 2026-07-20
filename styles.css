@@ -1067,6 +1067,19 @@ a:focus-visible {
   line-height: 1.5;
 }
 
+.notif-interval-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.notif-interval-row label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
 .backup-buttons {
   display: flex;
   gap: 8px;
@@ -1074,6 +1087,8 @@ a:focus-visible {
 }
 
 .secondary-button {
+  display: block;
+  width: 100%;
   flex: 1;
   min-width: 120px;
   text-align: center;

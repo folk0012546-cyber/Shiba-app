@@ -165,7 +165,7 @@
           <div><h2 id="profile-heading"></h2></div>
         </div>
         <div class="profile-card">
-          <div class="profile-avatar" aria-hidden="true">S</div>
+          <div class="profile-avatar" aria-hidden="true">🌈</div>
           <div class="profile-stats">
             <div class="profile-stat"><strong id="profile-stat-total"></strong><span id="profile-label-total"></span></div>
             <div class="profile-stat"><strong id="profile-stat-done"></strong><span id="profile-label-done"></span></div>
@@ -186,6 +186,20 @@
             <button class="chip" type="button" data-theme-choice="auto"></button>
             <button class="chip" type="button" data-theme-choice="light"></button>
             <button class="chip" type="button" data-theme-choice="dark"></button>
+          </div>
+        </div>
+        <div class="profile-section">
+          <h3 id="profile-notif-heading"></h3>
+          <p class="profile-hint" id="profile-notif-hint"></p>
+          <button class="secondary-button" id="profile-notif-toggle" type="button"></button>
+          <div class="notif-interval-row" id="notif-interval-row">
+            <label id="notif-interval-label" for="notif-interval-select"></label>
+            <select id="notif-interval-select" class="chip-select">
+              <option value="30"></option>
+              <option value="60"></option>
+              <option value="120"></option>
+              <option value="180"></option>
+            </select>
           </div>
         </div>
         <div class="profile-section">
