@@ -1069,6 +1069,14 @@
     renderComposerChips();
   });
 
+  dateInput.addEventListener("click", () => {
+    try {
+      if (typeof dateInput.showPicker === "function") dateInput.showPicker();
+    } catch {
+      /* showPicker can throw if not user-gesture-triggered in some browsers; ignore */
+    }
+  });
+
   dateInput.addEventListener("change", () => {
     if (!dateInput.value) return;
     composerDue = dateInput.value;
