@@ -398,6 +398,17 @@
   const appShellEl = document.getElementById("app-shell");
   const bottomNavEl = document.getElementById("bottom-nav");
   const googleSigninBtn = document.getElementById("google-signin-btn");
+  const splashScreenEl = document.getElementById("splash-screen");
+
+  let splashDismissed = false;
+  function dismissSplash() {
+    if (splashDismissed || !splashScreenEl) return;
+    splashDismissed = true;
+    splashScreenEl.classList.add("fade-out");
+    setTimeout(() => {
+      splashScreenEl.hidden = true;
+    }, 260);
+  }
   const profileSignedInAsEl = document.getElementById("profile-signed-in-as");
   const profileSignoutBtn = document.getElementById("profile-signout");
 
@@ -410,6 +421,7 @@
     }
     tasksRef = firebase.database().ref("tasks/" + user.uid);
     initFirebaseSync();
+    dismissSplash();
   }
 
   function showLoginScreen() {
@@ -418,6 +430,7 @@
     loginScreenEl.hidden = false;
     appShellEl.hidden = true;
     bottomNavEl.hidden = true;
+    dismissSplash();
   }
 
   if (firebaseReady && auth) {
@@ -430,7 +443,11 @@
     loginScreenEl.hidden = true;
     appShellEl.hidden = false;
     bottomNavEl.hidden = false;
+    dismissSplash();
   }
+
+  // Safety net: never let the splash hang if auth is slow or offline.
+  setTimeout(dismissSplash, 4000);
 
   if (googleSigninBtn) {
     googleSigninBtn.addEventListener("click", () => {

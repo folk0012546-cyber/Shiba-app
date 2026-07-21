@@ -207,6 +207,39 @@ a:focus-visible {
 /* ===================================================================
    Hero — the signature shiba illustration
 =================================================================== */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream);
+  transition: opacity 0.25s ease;
+}
+
+.splash-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-mark {
+  width: 74px;
+  height: 74px;
+  border-radius: 22px;
+  background: var(--coat);
+  display: grid;
+  place-items: center;
+  font-size: 2.1rem;
+  box-shadow: var(--shadow-md);
+  animation: splashPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes splashPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.07); opacity: 0.88; }
+}
+
 .login-screen {
   min-height: 100vh;
   min-height: 100dvh;
