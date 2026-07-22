@@ -62,8 +62,6 @@
 
 html {
   -webkit-text-size-adjust: 100%;
-  height: 100%;
-  overscroll-behavior-y: none;
   overflow-x: hidden;
 }
 
@@ -78,7 +76,6 @@ body {
   color: var(--ink);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   overflow-x: hidden;
@@ -906,6 +903,7 @@ a:focus-visible {
 .view-page {
   display: block;
   padding-top: 6px;
+  padding-bottom: 24px;
 }
 
 /* ===================================================================
@@ -1352,52 +1350,90 @@ a:focus-visible {
   box-shadow: var(--shadow-md);
 }
 
-.chart-bars {
+.line-chart-svg {
+  width: 100%;
+  height: 170px;
+  display: block;
+  overflow: visible;
+}
+
+.chart-gridline {
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.chart-line {
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.line-created {
+  stroke: var(--ink-faint);
+}
+
+.line-completed {
+  stroke: var(--coat);
+}
+
+.chart-dot {
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-dot.line-created {
+  fill: var(--ink-faint);
+}
+
+.chart-dot.line-completed {
+  fill: var(--coat);
+}
+
+.chart-axis-label {
+  fill: var(--ink-faint);
+  font-size: 8px;
+  font-weight: 600;
+  font-family: var(--font-body);
+}
+
+.chart-legend {
   display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  height: 160px;
-  overflow-x: auto;
-}
-
-.chart-bar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  height: 100%;
-  flex: 1;
-  min-width: 26px;
-  gap: 4px;
-}
-
-.chart-bar-fill {
-  width: 60%;
-  min-height: 3px;
-  background: linear-gradient(var(--coat) 0%, var(--coat-dark) 100%);
-  border-radius: 6px 6px 2px 2px;
-  transition: height 0.25s ease;
-}
-
-.chart-bar-count {
-  font-size: 0.62rem;
-  font-weight: 700;
+  gap: 18px;
+  justify-content: center;
+  margin-top: 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 
-.chart-bar-label {
-  font-size: 0.62rem;
-  color: var(--ink-faint);
-  font-weight: 600;
-  white-space: nowrap;
+.chart-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 14px;
+  height: 3px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.swatch-created {
+  background: var(--ink-faint);
+}
+
+.swatch-completed {
+  background: var(--coat);
 }
 
 @media (min-width: 760px) {
   .dashboard-summary {
     grid-template-columns: repeat(3, 1fr);
   }
-  .chart-bars {
-    height: 200px;
+  .line-chart-svg {
+    height: 210px;
   }
 }
 
@@ -1540,5 +1576,122 @@ a:focus-visible {
 
   .hero h1 {
     font-size: 2.35rem;
+  }
+}
+
+/* ===================================================================
+   Desktop polish — pointer-only refinements for a smoother, more
+   app-like feel when the app runs installed on a laptop/desktop.
+   Guarded by hover+fine-pointer so none of this touches mobile.
+=================================================================== */
+@media (hover: hover) and (pointer: fine) {
+  /* A calmer, on-brand scrollbar instead of the default chunky grey one */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--coat-light) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--coat-light);
+    border-radius: 999px;
+    border: 3px solid var(--cream);
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--coat);
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Buttons and chips get a gentle lift + settle on press */
+  .add-button,
+  .chip,
+  .scope-tab,
+  .filter-tab,
+  .secondary-button,
+  .google-signin-btn,
+  .nav-item,
+  .text-button,
+  .calendar-nav button,
+  .dashboard-period-nav button {
+    transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease,
+      box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+  .chip:hover,
+  .scope-tab:hover,
+  .filter-tab:hover,
+  .secondary-button:hover,
+  .nav-item:hover {
+    transform: translateY(-1px);
+  }
+  .add-button:active,
+  .chip:active,
+  .scope-tab:active,
+  .filter-tab:active,
+  .secondary-button:active,
+  .google-signin-btn:active,
+  .nav-item:active,
+  .calendar-nav button:active,
+  .dashboard-period-nav button:active {
+    transform: scale(0.95);
+  }
+
+  /* Calendar day cells feel clickable */
+  .calendar-day:not(.is-blank) {
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+  }
+  .calendar-day:not(.is-blank):hover {
+    transform: scale(1.06);
+  }
+  .calendar-day:not(.is-blank):active {
+    transform: scale(0.97);
+  }
+
+  /* Task rows: smoother hover, and reveal the edit/delete controls softly */
+  .task-item .task-edit,
+  .task-item .task-delete {
+    opacity: 0.55;
+    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  .task-item:hover .task-edit,
+  .task-item:hover .task-delete {
+    opacity: 1;
+  }
+
+  /* Line chart dots enlarge slightly on hover */
+  .chart-dot {
+    transition: r 0.15s ease;
+  }
+  .chart-dot:hover {
+    r: 4;
+  }
+
+  /* Dashboard stat cards lift slightly, matching task/upcoming cards */
+  .dashboard-stat-card,
+  .profile-card,
+  .calendar-card,
+  .quick-add {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .dashboard-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Language dropdown + selects: subtle hover cue */
+  .language-picker:hover,
+  .chip-select:hover,
+  .notif-interval-row select:hover {
+    border-color: var(--coat-light);
+  }
+}
+
+/* Smooth scrolling for in-page jumps (e.g. brand → #today) on all devices */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
   }
 }

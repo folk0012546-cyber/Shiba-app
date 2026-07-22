@@ -1134,7 +1134,8 @@
     const rate = created > 0 ? Math.round((completed / created) * 100) : 0;
     const chartData = period.buckets.map((b) => ({
       label: b.label,
-      count: tasks.filter((task) => inRange(task.completedAt, b.start, b.end)).length,
+      created: tasks.filter((task) => inRange(task.createdAt, b.start, b.end)).length,
+      completed: tasks.filter((task) => inRange(task.completedAt, b.start, b.end)).length,
     }));
     return { label: period.label, created, completed, rate, chartData };
   }
@@ -1164,29 +1165,93 @@
     animateNumber(dashStatCreatedEl, data.created);
     animateNumber(dashStatCompletedEl, data.completed);
     animateNumber(dashStatRateEl, data.rate, (v) => `${v}%`);
+    renderLineChart(data.chartData);
+  }
 
-    const maxCount = Math.max(1, ...data.chartData.map((d) => d.count));
+  function renderLineChart(chartData) {
+    const t = STR[lang];
     dashboardChartEl.innerHTML = "";
-    data.chartData.forEach((bucket) => {
-      const col = document.createElement("div");
-      col.className = "chart-bar";
 
-      const countLabel = document.createElement("span");
-      countLabel.className = "chart-bar-count";
-      countLabel.textContent = String(bucket.count);
+    const W = 320;
+    const H = 150;
+    const padL = 24;
+    const padR = 12;
+    const padT = 14;
+    const padB = 26;
+    const innerW = W - padL - padR;
+    const innerH = H - padT - padB;
+    const n = chartData.length;
+    const maxVal = Math.max(1, ...chartData.map((d) => Math.max(d.created, d.completed)));
 
-      const fill = document.createElement("div");
-      fill.className = "chart-bar-fill";
-      const pct = Math.round((bucket.count / maxCount) * 100);
-      fill.style.height = `${bucket.count > 0 ? Math.max(pct, 6) : 2}%`;
+    const xFor = (i) => padL + (n <= 1 ? innerW / 2 : (innerW * i) / (n - 1));
+    const yFor = (v) => padT + innerH - (innerH * v) / maxVal;
 
-      const label = document.createElement("span");
-      label.className = "chart-bar-label";
-      label.textContent = bucket.label;
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("class", "line-chart-svg");
+    svg.setAttribute("preserveAspectRatio", "none");
 
-      col.append(countLabel, fill, label);
-      dashboardChartEl.appendChild(col);
+    // horizontal gridlines (baseline + max)
+    [0, maxVal].forEach((v) => {
+      const line = document.createElementNS(svgNS, "line");
+      line.setAttribute("x1", padL);
+      line.setAttribute("x2", W - padR);
+      line.setAttribute("y1", yFor(v));
+      line.setAttribute("y2", yFor(v));
+      line.setAttribute("class", "chart-gridline");
+      svg.appendChild(line);
     });
+
+    const buildPath = (key) =>
+      chartData.map((d, i) => `${i === 0 ? "M" : "L"} ${xFor(i).toFixed(1)} ${yFor(d[key]).toFixed(1)}`).join(" ");
+
+    const series = [
+      { key: "created", cls: "line-created" },
+      { key: "completed", cls: "line-completed" },
+    ];
+
+    series.forEach(({ key, cls }) => {
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("d", buildPath(key));
+      path.setAttribute("class", `chart-line ${cls}`);
+      path.setAttribute("fill", "none");
+      svg.appendChild(path);
+      chartData.forEach((d, i) => {
+        const dot = document.createElementNS(svgNS, "circle");
+        dot.setAttribute("cx", xFor(i));
+        dot.setAttribute("cy", yFor(d[key]));
+        dot.setAttribute("r", "2.6");
+        dot.setAttribute("class", `chart-dot ${cls}`);
+        const title = document.createElementNS(svgNS, "title");
+        title.textContent = `${d.label}: ${d[key]}`;
+        dot.appendChild(title);
+        svg.appendChild(dot);
+      });
+    });
+
+    // x-axis labels (thinned out if crowded)
+    const step = n > 8 ? Math.ceil(n / 6) : 1;
+    chartData.forEach((d, i) => {
+      if (i % step !== 0 && i !== n - 1) return;
+      const text = document.createElementNS(svgNS, "text");
+      text.setAttribute("x", xFor(i));
+      text.setAttribute("y", H - 8);
+      text.setAttribute("class", "chart-axis-label");
+      text.setAttribute("text-anchor", "middle");
+      text.textContent = d.label;
+      svg.appendChild(text);
+    });
+
+    dashboardChartEl.appendChild(svg);
+
+    // legend
+    const legend = document.createElement("div");
+    legend.className = "chart-legend";
+    legend.innerHTML =
+      `<span><i class="legend-swatch swatch-created"></i>${t.dashCreated}</span>` +
+      `<span><i class="legend-swatch swatch-completed"></i>${t.dashCompleted}</span>`;
+    dashboardChartEl.appendChild(legend);
   }
 
 
